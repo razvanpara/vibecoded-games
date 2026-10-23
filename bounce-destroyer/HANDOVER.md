@@ -17,7 +17,7 @@ Bounce Destroyer is a standalone browser arcade game inspired by brick-breaker g
 - The ball spawns centered below the blocks and above the platform, initially moving downward. It bounces off the side walls, ceiling, platform, and blocks. Each block is removed on impact and awards 10 points.
 - Platform bounce direction combines the incoming ball angle, horizontal impact offset, and platform velocity at contact. Each successful bounce slightly increases ball speed; speed is capped at 570 px/s.
 - The ball falling below the canvas costs a life and respawns after a short delay. Clearing all blocks advances the level, regenerates the formation, and increases ball speed. The high score persists in local storage under `bounce_destroyer_hiscore`.
-- **A/D** or **←/→** move the platform. On mobile, use the left/right pad or drag/tap the playfield to position it.
+- **A/D** or **←/→** move the platform. On mobile, use the enlarged left/right pad at the bottom of the viewport or drag/tap the playfield to position it; the playfield remains above the touch controls.
 - **P** pauses/resumes; **M** toggles sound; **R** starts a fresh game. Start, resume, and replay buttons are also available.
 
 ## Code map and handoff notes

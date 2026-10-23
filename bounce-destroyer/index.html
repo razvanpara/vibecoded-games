@@ -136,6 +136,43 @@
             .actions { gap: 5px; }
             .btn { padding: 7px 8px; font-size: .78rem; }
         }
+
+        @media (pointer: coarse), (max-width: 700px) {
+            body {
+                display: flex;
+                min-height: 100svh;
+                padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+                align-items: stretch;
+                justify-content: center;
+            }
+
+            .game { display: flex; flex-direction: column; min-height: calc(100svh - 16px); }
+            header, .hud { flex-shrink: 0; }
+            .controls { display: none; }
+            .stage {
+                display: flex;
+                flex: 1 1 auto;
+                min-height: 0;
+                align-items: flex-start;
+                justify-content: center;
+            }
+            canvas {
+                width: auto;
+                max-width: 100%;
+                max-height: 100%;
+                margin-inline: auto;
+                object-fit: contain;
+            }
+            .mobile-controls {
+                flex: 0 0 auto;
+                margin-top: auto;
+                padding-top: 14px;
+                padding-bottom: 4px;
+            }
+            .mobile-controls button { width: 88px; height: 76px; font-size: 1.7rem; }
+            .btn { min-height: 48px; padding: 11px 13px; font-size: .9rem; }
+            .primary { min-height: 56px; padding: 13px 28px; }
+        }
     </style>
 </head>
 <body>

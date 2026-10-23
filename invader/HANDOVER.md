@@ -31,7 +31,7 @@ Block Invader is a single-player browser arcade shooter. The player pilots a shi
 | **M** | Toggle sound |
 | **R** | Restart after game over |
 
-Movement accelerates while a direction is held, up to 2.5× normal ship speed; releasing or changing direction resets the acceleration. Coarse-pointer/mobile layouts provide a left/right touch pad.
+Movement accelerates while a direction is held, up to 2.5× normal ship speed; releasing or changing direction resets the acceleration. Coarse-pointer/mobile layouts put the playfield above enlarged left/right touch controls at the bottom of the viewport.
 
 ## Code map and handoff notes
 

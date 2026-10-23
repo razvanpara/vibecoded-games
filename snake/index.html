@@ -727,6 +727,72 @@
                 display: none;
             }
         }
+
+        @media (max-width: 860px), (pointer: coarse) {
+            body {
+                justify-content: flex-start;
+                min-height: 100svh;
+                padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+            }
+
+            .game-wrapper {
+                min-height: calc((100svh - 16px) / var(--mobile-scale, 1));
+            }
+
+            .controls-strip { display: none; }
+            .brand-header {
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+            .title-group { flex: 1 0 100%; }
+            .hud-group {
+                width: 100%;
+                justify-content: flex-start;
+                margin-top: 4px;
+            }
+            .dpad-container {
+                margin-top: auto;
+                padding-top: 12px;
+            }
+
+            .dpad-btn,
+            .dpad-spacer {
+                width: 130px;
+                height: 130px;
+            }
+
+            .btn {
+                min-height: 48px;
+                padding: .65rem .9rem;
+            }
+
+            .btn-speed {
+                min-width: 48px;
+                min-height: 48px;
+            }
+
+            .btn-large {
+                min-height: 56px;
+                padding-inline: 1.5rem;
+            }
+
+            .back-to-games,
+            #soundBtn,
+            #pauseBtn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 5px;
+                min-height: 48px;
+                padding: 11px 13px;
+                border: 1px solid rgba(148, 163, 184, .2);
+                border-radius: 8px;
+                background: rgba(30, 41, 59, .8);
+                color: #e2e8f0;
+                font: 600 .9rem Outfit, sans-serif;
+                transition: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1656,13 +1722,47 @@
         const GAME_WIDTH = 806; // natural pixel width
 
         function applyScale() {
-            const availW = Math.min(window.innerWidth, window.screen.width);
-            const scale = Math.min(1, availW / GAME_WIDTH);
+            const mobileLayout = window.matchMedia('(max-width: 860px), (pointer: coarse)').matches;
+            const availW = Math.min(window.innerWidth, window.screen.width) - (mobileLayout ? 20 : 0);
+            if (mobileLayout) gameWrapper.style.minHeight = '0';
+
+            const buttons = gameWrapper.querySelectorAll('.back-to-games, #soundBtn, #pauseBtn');
+            const widthScale = Math.min(1, availW / GAME_WIDTH);
+            let scale = widthScale;
+            if (mobileLayout) {
+                for (let i = 0; i < 3; i++) {
+                    gameWrapper.style.setProperty('--mobile-scale', scale);
+                    buttons.forEach(button => {
+                        button.style.minHeight = `${48 / scale}px`;
+                        button.style.padding = `${11 / scale}px ${13 / scale}px`;
+                        button.style.borderWidth = `${1 / scale}px`;
+                        button.style.borderRadius = `${8 / scale}px`;
+                        button.style.fontSize = `${14.4 / scale}px`;
+                        button.style.gap = `${5 / scale}px`;
+                    });
+                    const naturalH = gameWrapper.offsetHeight;
+                    const nextScale = Math.min(widthScale, (window.innerHeight - 16) / naturalH);
+                    if (Math.abs(nextScale - scale) < 0.001) break;
+                    scale = nextScale;
+                }
+            } else {
+                buttons.forEach(button => {
+                    button.style.removeProperty('min-height');
+                    button.style.removeProperty('padding');
+                    button.style.removeProperty('border-width');
+                    button.style.removeProperty('border-radius');
+                    button.style.removeProperty('font-size');
+                    button.style.removeProperty('gap');
+                });
+            }
+
+            gameWrapper.style.setProperty('--mobile-scale', scale);
             gameWrapper.style.transform = `scale(${scale})`;
+            if (mobileLayout) gameWrapper.style.minHeight = '';
             // Compensate layout height so the body doesn't scroll
-            const naturalH = gameWrapper.offsetHeight;
-            const shrunkH  = Math.round(naturalH * scale);
-            gameWrapper.style.marginBottom = (shrunkH - naturalH) + 'px';
+            const finalNaturalH = gameWrapper.offsetHeight;
+            const shrunkH  = Math.round(finalNaturalH * scale);
+            gameWrapper.style.marginBottom = (shrunkH - finalNaturalH) + 'px';
         }
         applyScale();
         window.addEventListener('resize', applyScale);

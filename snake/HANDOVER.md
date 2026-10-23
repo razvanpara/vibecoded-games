@@ -48,6 +48,8 @@ The project is a browser game featuring persistent multi-colored trailing square
 
 The game opens with a start screen. Select **Start Game** to begin; Auto Run is enabled by default on each start/restart. While Auto Run is on, the first valid direction input is buffered for the next timer tick; further direction inputs are ignored until that tick moves the snake. This prevents multiple quick key presses from chaining turns in place. Turn Auto Run off to move one tile per direction input, with inputs limited to one per movement interval.
 
+On mobile/coarse-pointer screens, the playfield stays above enlarged touch controls positioned at the bottom of the viewport.
+
 | Control | Action |
 | :--- | :--- |
 | <kbd>W</kbd> / <kbd>&uarr;</kbd> | Move UP |

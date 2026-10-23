@@ -27,7 +27,7 @@ Obstacle Course is a single-player browser survival game in the same arcade styl
 | **M** | Toggle sound |
 | **R** | Restart after game over |
 
-Movement accelerates while holding a direction, up to 2.5× normal speed; releasing or switching directions resets acceleration. Mobile/coarse-pointer devices show left/right touch buttons.
+Movement accelerates while holding a direction, up to 2.5× normal speed; releasing or switching directions resets acceleration. Mobile/coarse-pointer layouts put the playfield above enlarged left/right touch buttons at the bottom of the viewport.
 
 ## Code map and notes
 

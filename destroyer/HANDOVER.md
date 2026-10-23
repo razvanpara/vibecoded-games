@@ -16,7 +16,7 @@ Block Destroyer is a single-player, browser-based arcade shooter in the same vis
 - Canvas size: 800 × 600 pixels. The field starts with 16 columns × 7 rows of blocks.
 - Move left/right with **A/D** or **←/→**; hold **Space** to fire. Bullets have a 250 ms cooldown and at most two can be active at once.
 - **P** pauses/resumes, **M** toggles sound, and **R** restarts after game over. Start and restart buttons are also available.
-- Touch/coarse-pointer layouts show an on-screen left/right/fire pad.
+- Touch/coarse-pointer layouts show enlarged left/right/fire controls at the bottom of the viewport, below the playfield.
 - Blocks descend by one row every 5 seconds initially. The interval is reduced by 15% each level, down to a 1.2-second minimum.
 - Destroying a block adds one point. Clearing the field increments the level, rebuilds the blocks, and clears active bullets.
 - The high score is stored in browser `localStorage` under `destroyer_hiscore`.
