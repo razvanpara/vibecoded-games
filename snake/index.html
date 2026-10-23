@@ -915,6 +915,9 @@
         let highScore = parseInt(localStorage.getItem('chroma_snake_highscore') || '0', 10);
         let speed = 1; // 1 to 10
         let autoRunInterval = null;
+        let pendingAutoDirection = null;
+        let directionInputLocked = false;
+        let directionInputTimeout = null;
         let soundEnabled = true;
         let bombsEnabled = true;
 
@@ -1121,7 +1124,9 @@
             if (autoRunInterval) {
                 clearInterval(autoRunInterval);
                 autoRunInterval = setInterval(() => {
-                    move(currentDir);
+                    move(pendingAutoDirection || currentDir);
+                    pendingAutoDirection = null;
+                    directionInputLocked = false;
                 }, intervalMs);
             }
         }
@@ -1258,11 +1263,7 @@
             if (dir === 'LEFT') dx = -size;
             if (dir === 'RIGHT') dx = size;
 
-            // Block direct 180° opposite reversal
-            if (dir === 'UP' && currentDir === 'DOWN') return;
-            if (dir === 'DOWN' && currentDir === 'UP') return;
-            if (dir === 'LEFT' && currentDir === 'RIGHT') return;
-            if (dir === 'RIGHT' && currentDir === 'LEFT') return;
+            if (isOppositeDirection(dir)) return;
 
             if (currentDir !== dir) {
                 playSound('turn');
@@ -1382,6 +1383,31 @@
             render(teleportedIndices);
         }
 
+        function isOppositeDirection(dir) {
+            return (dir === 'UP' && currentDir === 'DOWN')
+                || (dir === 'DOWN' && currentDir === 'UP')
+                || (dir === 'LEFT' && currentDir === 'RIGHT')
+                || (dir === 'RIGHT' && currentDir === 'LEFT');
+        }
+
+        function handleDirectionInput(dir) {
+            if (autoRunInterval) {
+                if (pendingAutoDirection !== null) return;
+                if (isOppositeDirection(dir)) return;
+                pendingAutoDirection = dir;
+                return;
+            }
+
+            if (directionInputLocked || isOppositeDirection(dir)) return;
+
+            directionInputLocked = true;
+            move(dir);
+            directionInputTimeout = setTimeout(() => {
+                directionInputLocked = false;
+                directionInputTimeout = null;
+            }, getSpeedIntervalMs(speed));
+        }
+
         function render(teleportedIndices = []) {
             if (teleportedIndices.includes(0)) {
                 player.classList.add('no-transition');
@@ -1439,6 +1465,12 @@
                 autoBtn.innerText = 'Auto Run: OFF';
                 autoBtn.classList.remove('active');
             }
+            if (directionInputTimeout) {
+                clearTimeout(directionInputTimeout);
+                directionInputTimeout = null;
+            }
+            pendingAutoDirection = null;
+            directionInputLocked = false;
             isGameOver = false;
             isPaused = false;
             hasStarted = true;
@@ -1474,6 +1506,12 @@
 
         function toggleAuto() {
             if (!hasStarted || isGameOver || isPaused) return;
+            if (directionInputTimeout) {
+                clearTimeout(directionInputTimeout);
+                directionInputTimeout = null;
+            }
+            pendingAutoDirection = null;
+            directionInputLocked = false;
             if (autoRunInterval) {
                 clearInterval(autoRunInterval);
                 autoRunInterval = null;
@@ -1481,7 +1519,9 @@
                 autoBtn.classList.remove('active');
             } else {
                 autoRunInterval = setInterval(() => {
-                    move(currentDir);
+                    move(pendingAutoDirection || currentDir);
+                    pendingAutoDirection = null;
+                    directionInputLocked = false;
                 }, getSpeedIntervalMs(speed));
                 autoBtn.innerText = 'Auto Run: ON';
                 autoBtn.classList.add('active');
@@ -1532,16 +1572,16 @@
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'w' || key === 'arrowup') {
-                move('UP');
+                handleDirectionInput('UP');
                 e.preventDefault();
             } else if (key === 's' || key === 'arrowdown') {
-                move('DOWN');
+                handleDirectionInput('DOWN');
                 e.preventDefault();
             } else if (key === 'a' || key === 'arrowleft') {
-                move('LEFT');
+                handleDirectionInput('LEFT');
                 e.preventDefault();
             } else if (key === 'd' || key === 'arrowright') {
-                move('RIGHT');
+                handleDirectionInput('RIGHT');
                 e.preventDefault();
             } else if (key === 'r') {
                 resetGame();
@@ -1576,12 +1616,12 @@
             el.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 el.classList.add('pressed');
-                move(dir);
+                handleDirectionInput(dir);
             }, { passive: false });
             el.addEventListener('touchend', () => el.classList.remove('pressed'));
             el.addEventListener('mousedown', () => {
                 el.classList.add('pressed');
-                move(dir);
+                handleDirectionInput(dir);
             });
             el.addEventListener('mouseup', () => el.classList.remove('pressed'));
             el.addEventListener('mouseleave', () => el.classList.remove('pressed'));
@@ -1605,9 +1645,9 @@
             const ady = Math.abs(dy);
             if (Math.max(adx, ady) < 20) return; // too short
             if (adx > ady) {
-                move(dx > 0 ? 'RIGHT' : 'LEFT');
+                handleDirectionInput(dx > 0 ? 'RIGHT' : 'LEFT');
             } else {
-                move(dy > 0 ? 'DOWN' : 'UP');
+                handleDirectionInput(dy > 0 ? 'DOWN' : 'UP');
             }
         }, { passive: true });
 
