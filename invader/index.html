@@ -63,6 +63,7 @@
             margin-bottom: 12px;
         }
         .title-group { display: flex; align-items: baseline; gap: 12px; }
+        .back-to-games { flex-shrink: 0; text-decoration: none; white-space: nowrap; }
         h1 {
             font-size: clamp(1.55rem, 6vw, 2rem);
             font-weight: 800;
@@ -200,6 +201,7 @@
         @media (pointer: coarse), (max-width: 700px) { .dpad-container { display: flex; } }
         @media (max-width: 520px) {
             body { padding: 14px 9px; }
+            .brand-header { flex-wrap: wrap; }
             .title-badge { display: none; }
             .brand-header { align-items: flex-start; }
             .hud-bar { padding: 7px; }
@@ -215,6 +217,7 @@
     <main class="game-wrapper">
         <header class="brand-header">
             <div class="title-group">
+                <a class="btn back-to-games" href="../index.html" aria-label="Back to game selection">← Games</a>
                 <h1>Block Invader</h1>
                 <span class="title-badge">ARCADE EDITION</span>
             </div>

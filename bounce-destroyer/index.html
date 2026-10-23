@@ -36,6 +36,8 @@
 
         .game { width: min(806px, 100%); }
         header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .title-group { display: flex; align-items: baseline; gap: 12px; }
+        .back-to-games { flex-shrink: 0; text-decoration: none; white-space: nowrap; }
         h1 {
             font-size: clamp(1.5rem, 6vw, 2rem);
             font-weight: 800;
@@ -124,6 +126,7 @@
         @media (pointer: coarse), (max-width: 700px) { .mobile-controls { display: flex; } }
         @media (max-width: 480px) {
             body { padding: 14px 9px; }
+            header { flex-wrap: wrap; }
             .badge { display: none; }
             .hud { padding: 7px; }
             .stats { gap: 5px; }
@@ -138,7 +141,10 @@
 <body>
     <main class="game">
         <header>
-            <div><h1>Bounce Destroyer<span class="badge">ARCADE EDITION</span></h1></div>
+            <div class="title-group">
+                <a class="btn back-to-games" href="../index.html" aria-label="Back to game selection">← Games</a>
+                <h1>Bounce Destroyer<span class="badge">ARCADE EDITION</span></h1>
+            </div>
             <div class="actions">
                 <button class="btn" id="soundBtn" type="button">🔊 Sound: ON</button>
                 <button class="btn" id="pauseBtn" type="button">⏸ Pause</button>
