@@ -1,0 +1,16 @@
+{
+  "name": "viewport-game",
+  "version": "1.0.0",
+  "description": "A simple web game with an 800x600 viewport and WASD movement",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "game",
+    "viewport",
+    "wasd"
+  ],
+  "author": "",
+  "license": "MIT"
+}
