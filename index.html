@@ -114,7 +114,8 @@
         .obstacle { --accent: #67e8f9; --accent-rgb: 103, 232, 249; }
         .flappy { --accent: #ffe44d; --accent-rgb: 255, 228, 77; }
         .tetris { --accent: #c084fc; --accent-rgb: 192, 132, 252; }
-        .game-card:nth-child(7) { grid-column: 3 / span 2; }
+        .matchswap { --accent: #34d399; --accent-rgb: 52, 211, 153; }
+        .game-card:nth-child(7), .game-card:nth-child(8) { grid-column: span 3; }
         .art {
             position: relative;
             display: grid;
@@ -195,13 +196,13 @@
         <section class="hero" aria-labelledby="page-title">
             <div class="eyebrow">The game room is open</div>
             <h1 id="page-title">Pick your<br><span>next game.</span></h1>
-            <p class="hero-copy">Seven tiny arcade worlds. Dodge, bounce, shoot, stack, or grab a snack. Choose your game and jump straight in.</p>
+            <p class="hero-copy">Eight tiny arcade worlds. Match, dodge, bounce, shoot, stack, or grab a snack. Choose your game and jump straight in.</p>
         </section>
 
         <section aria-labelledby="collection-title">
             <div class="collection-head">
                 <h2 id="collection-title">Choose your game</h2>
-                <span class="collection-count">01 — 07&nbsp; / &nbsp;ARCADE COLLECTION</span>
+                <span class="collection-count">01 — 08&nbsp; / &nbsp;ARCADE COLLECTION</span>
             </div>
 
             <div class="game-grid">
@@ -342,6 +343,22 @@
                         </svg>
                     </div>
                     <div class="card-info"><div class="card-text"><h3 class="card-title">Tetris</h3><p class="card-description">Rotate, stack, and clear lines as the blocks keep falling.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card matchswap" href="match-swap/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Colorful gems arranged in a match-three grid">
+                            <g opacity=".22" stroke="#94a3b8" stroke-width="1"><path d="M139 25h162M139 57h162M139 89h162M139 121h162"/><path d="M171 16v128m32-128v128m32-128v128m32-128v128"/></g>
+                            <circle cx="155" cy="41" r="13" fill="#fb7185"/><circle cx="187" cy="41" r="13" fill="#38bdf8"/><circle cx="219" cy="41" r="13" fill="#fbbf24"/><circle cx="251" cy="41" r="13" fill="#a78bfa"/>
+                            <circle cx="155" cy="73" r="13" fill="#34d399"/><circle cx="187" cy="73" r="13" fill="#fb923c"/><circle cx="219" cy="73" r="13" fill="#fb7185"/><circle cx="251" cy="73" r="13" fill="#38bdf8"/>
+                            <circle cx="155" cy="105" r="13" fill="#fbbf24"/><circle cx="187" cy="105" r="13" fill="#a78bfa"/><circle cx="219" cy="105" r="13" fill="#34d399"/><circle cx="251" cy="105" r="13" fill="#fb923c"/>
+                            <circle cx="155" cy="137" r="13" fill="#38bdf8"/><circle cx="187" cy="137" r="13" fill="#fb7185"/><circle cx="219" cy="137" r="13" fill="#a78bfa"/><circle cx="251" cy="137" r="13" fill="#fbbf24"/>
+                            <circle cx="326" cy="73" r="13" fill="#fb7185"/><circle cx="358" cy="73" r="13" fill="#fb7185"/><circle cx="390" cy="73" r="13" fill="#fb7185"/>
+                            <path d="M324 104h68" stroke="#34d399" stroke-width="2" stroke-dasharray="4 6" opacity=".75"/>
+                            <circle cx="326" cy="133" r="3" fill="#34d399"/><circle cx="358" cy="133" r="3" fill="#34d399"/><circle cx="390" cy="133" r="3" fill="#34d399"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Match / Swap</h3><p class="card-description">Line up colorful gems, spark cascades, and chase a new high score.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
                 </a>
             </div>
         </section>
