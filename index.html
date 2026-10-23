@@ -112,6 +112,7 @@
         .invader { --accent: #fbbf24; --accent-rgb: 251, 191, 36; }
         .bounce { --accent: #a78bfa; --accent-rgb: 167, 139, 250; }
         .obstacle { --accent: #67e8f9; --accent-rgb: 103, 232, 249; }
+        .flappy { --accent: #ffe44d; --accent-rgb: 255, 228, 77; }
         .art {
             position: relative;
             display: grid;
@@ -159,7 +160,6 @@
             .topbar { margin-bottom: 54px; }
             .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
             .game-card, .game-card:nth-child(n) { grid-column: auto; }
-            .game-card:last-child { grid-column: span 2; }
             .art { height: 160px; }
         }
         @media (max-width: 500px) {
@@ -193,13 +193,13 @@
         <section class="hero" aria-labelledby="page-title">
             <div class="eyebrow">The game room is open</div>
             <h1 id="page-title">Pick your<br><span>next game.</span></h1>
-            <p class="hero-copy">Five tiny arcade worlds. Dodge, bounce, shoot, or grab a snack. Choose your game and jump straight in.</p>
+            <p class="hero-copy">Six tiny arcade worlds. Dodge, bounce, shoot, or grab a snack. Choose your game and jump straight in.</p>
         </section>
 
         <section aria-labelledby="collection-title">
             <div class="collection-head">
                 <h2 id="collection-title">Choose your game</h2>
-                <span class="collection-count">01 — 05&nbsp; / &nbsp;ARCADE COLLECTION</span>
+                <span class="collection-count">01 — 06&nbsp; / &nbsp;ARCADE COLLECTION</span>
             </div>
 
             <div class="game-grid">
@@ -304,6 +304,27 @@
                         </svg>
                     </div>
                     <div class="card-info"><div class="card-text"><h3 class="card-title">Obstacle Course</h3><p class="card-description">Keep moving. The only score that matters is how long you last.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card flappy" href="flappy/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Illustration of a yellow bird flying between green pipes">
+                            <defs>
+                                <linearGradient id="flappySky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#70c5ce"/><stop offset="1" stop-color="#3b9ba8"/></linearGradient>
+                                <linearGradient id="flappyPipe" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#9be34d"/><stop offset="1" stop-color="#4c9b37"/></linearGradient>
+                            </defs>
+                            <rect x="61" y="15" width="318" height="140" rx="13" fill="url(#flappySky)"/>
+                            <circle cx="108" cy="42" r="3" fill="#d8fbff" opacity=".8"/><circle cx="333" cy="57" r="3" fill="#d8fbff" opacity=".75"/>
+                            <path d="M85 140h270v15H85z" fill="#ded895"/><path d="M85 135h270v8H85z" fill="#79c943"/>
+                            <path d="M104 15h42v38h-42zM96 51h58v15h-58z" fill="url(#flappyPipe)" stroke="#397f30" stroke-width="3"/>
+                            <path d="M291 95h42v60h-42zM283 90h58v15h-58z" fill="url(#flappyPipe)" stroke="#397f30" stroke-width="3"/>
+                            <ellipse cx="220" cy="84" rx="30" ry="20" fill="#ffd93b" stroke="#e89b24" stroke-width="3"/>
+                            <ellipse cx="213" cy="88" rx="13" ry="8" fill="#f5a623"/>
+                            <circle cx="231" cy="77" r="6" fill="#fff"/><circle cx="233" cy="77" r="2.5" fill="#222"/>
+                            <path d="m247 83 17 6-17 6z" fill="#f47b20"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Flappy Bird</h3><p class="card-description">Flap through the gaps, dodge the pipes, and beat your best score.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
                 </a>
             </div>
         </section>
