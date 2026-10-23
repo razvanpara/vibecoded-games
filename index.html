@@ -113,6 +113,8 @@
         .bounce { --accent: #a78bfa; --accent-rgb: 167, 139, 250; }
         .obstacle { --accent: #67e8f9; --accent-rgb: 103, 232, 249; }
         .flappy { --accent: #ffe44d; --accent-rgb: 255, 228, 77; }
+        .tetris { --accent: #c084fc; --accent-rgb: 192, 132, 252; }
+        .game-card:nth-child(7) { grid-column: 3 / span 2; }
         .art {
             position: relative;
             display: grid;
@@ -193,13 +195,13 @@
         <section class="hero" aria-labelledby="page-title">
             <div class="eyebrow">The game room is open</div>
             <h1 id="page-title">Pick your<br><span>next game.</span></h1>
-            <p class="hero-copy">Six tiny arcade worlds. Dodge, bounce, shoot, or grab a snack. Choose your game and jump straight in.</p>
+            <p class="hero-copy">Seven tiny arcade worlds. Dodge, bounce, shoot, stack, or grab a snack. Choose your game and jump straight in.</p>
         </section>
 
         <section aria-labelledby="collection-title">
             <div class="collection-head">
                 <h2 id="collection-title">Choose your game</h2>
-                <span class="collection-count">01 — 06&nbsp; / &nbsp;ARCADE COLLECTION</span>
+                <span class="collection-count">01 — 07&nbsp; / &nbsp;ARCADE COLLECTION</span>
             </div>
 
             <div class="game-grid">
@@ -325,6 +327,21 @@
                         </svg>
                     </div>
                     <div class="card-info"><div class="card-text"><h3 class="card-title">Flappy Bird</h3><p class="card-description">Flap through the gaps, dodge the pipes, and beat your best score.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card tetris" href="tetris/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Colorful tetromino blocks stacked in a grid">
+                            <g opacity=".23" stroke="#94a3b8" stroke-width="1"><path d="M115 22h210M115 52h210M115 82h210M115 112h210M115 142h210"/><path d="M145 16v132m30-132v132m30-132v132m30-132v132m30-132v132m30-132v132"/></g>
+                            <g stroke="#0b1220" stroke-width="2">
+                                <rect x="146" y="24" width="28" height="27" rx="5" fill="#38bdf8"/><rect x="176" y="24" width="28" height="27" rx="5" fill="#38bdf8"/><rect x="206" y="24" width="28" height="27" rx="5" fill="#38bdf8"/><rect x="236" y="24" width="28" height="27" rx="5" fill="#38bdf8"/>
+                                <rect x="176" y="54" width="28" height="27" rx="5" fill="#c084fc"/><rect x="206" y="54" width="28" height="27" rx="5" fill="#c084fc"/><rect x="236" y="54" width="28" height="27" rx="5" fill="#c084fc"/><rect x="206" y="84" width="28" height="27" rx="5" fill="#c084fc"/>
+                                <rect x="146" y="114" width="28" height="27" rx="5" fill="#34d399"/><rect x="176" y="114" width="28" height="27" rx="5" fill="#34d399"/><rect x="236" y="114" width="28" height="27" rx="5" fill="#fbbf24"/><rect x="266" y="114" width="28" height="27" rx="5" fill="#fbbf24"/>
+                            </g>
+                            <circle cx="105" cy="49" r="2" fill="#c084fc"/><circle cx="332" cy="101" r="2" fill="#38bdf8"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Tetris</h3><p class="card-description">Rotate, stack, and clear lines as the blocks keep falling.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
                 </a>
             </div>
         </section>
