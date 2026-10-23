@@ -356,63 +356,32 @@
         /* ── Mobile D-pad ── */
         .dpad-container {
             display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 0;
-            margin-top: 1rem;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-top: 12px;
             touch-action: none;
         }
 
-        .dpad-row {
-            display: flex;
-            gap: 4px;
-        }
-
         .dpad-btn {
-            width: 64px;
-            height: 64px;
-            background: rgba(30,41,59,.85);
-            border: 1px solid rgba(244,63,94,.3);
+            width: 70px;
+            height: 58px;
+            border: 1px solid rgba(244,63,94,.35);
             border-radius: 10px;
+            background: rgba(30,41,59,.9);
             color: #e2e8f0;
-            font-size: 1.6rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,.4);
-            transition: background .1s, transform .08s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .dpad-btn:active, .dpad-btn.pressed {
-            background: rgba(244,63,94,.25);
-            border-color: var(--accent-rose);
-            transform: scale(.93);
-        }
-
-        .dpad-fire {
-            width: 64px;
-            height: 64px;
-            background: rgba(244,63,94,.2);
-            border: 1px solid rgba(244,63,94,.5);
-            border-radius: 50%;
-            color: #fb7185;
             font-size: 1.4rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(244,63,94,.3);
-            -webkit-tap-highlight-color: transparent;
         }
 
-        .dpad-fire:active, .dpad-fire.pressed {
-            background: rgba(244,63,94,.45);
-            transform: scale(.93);
+        .dpad-btn.pressed { background: rgba(244,63,94,.3); }
+        .dpad-btn.fire-btn {
+            border-color: rgba(244,63,94,.65);
+            background: rgba(190,18,60,.35);
+            font-size: 1rem;
+            font-weight: 700;
         }
-
-        .dpad-spacer { width: 64px; height: 64px; }
+        .dpad-btn.fire-btn.pressed { background: rgba(244,63,94,.65); }
 
         @media (max-width: 860px), (pointer: coarse) {
             .dpad-container { display: flex; }
@@ -454,15 +423,12 @@
             #gameCanvas { max-height: 100%; margin-inline: auto; object-fit: contain; }
             .dpad-container {
                 margin-top: auto;
-                padding-top: 12px;
+                padding-top: 14px;
+                padding-bottom: 4px;
             }
 
-            .dpad-btn,
-            .dpad-fire,
-            .dpad-spacer {
-                width: 132px;
-                height: 132px;
-            }
+            .dpad-btn { width: min(86px, 28vw); height: 76px; font-size: 1.7rem; }
+            .dpad-btn.fire-btn { font-size: 1rem; }
 
             .btn {
                 min-height: 48px;
@@ -583,13 +549,9 @@
 
         <!-- Mobile D-pad -->
         <div class="dpad-container" id="dpad">
-            <div class="dpad-row">
-                <button class="dpad-btn" id="dpadLeft"  aria-label="Left">◀</button>
-                <div   class="dpad-spacer"></div>
-                <button class="dpad-btn" id="dpadRight" aria-label="Right">▶</button>
-                <div style="width:20px"></div>
-                <button class="dpad-fire" id="dpadFire" aria-label="Fire">🔴</button>
-            </div>
+            <button class="dpad-btn" id="dpadLeft" type="button" aria-label="Move left">◀</button>
+            <button class="dpad-btn" id="dpadRight" type="button" aria-label="Move right">▶</button>
+            <button class="dpad-btn fire-btn" id="dpadFire" type="button" aria-label="Fire">FIRE</button>
         </div>
 
     </div><!-- /.game-wrapper -->
@@ -1381,6 +1343,21 @@
         if (mobileLayout) gameWrapper.style.minHeight = '0';
 
         const buttons = gameWrapper.querySelectorAll('.back-to-games, #soundBtn, #pauseBtn');
+        const touchControls = gameWrapper.querySelectorAll('.dpad-btn');
+        const dpad = gameWrapper.querySelector('.dpad-container');
+        function scaleTouchControls(scale) {
+            touchControls.forEach(button => {
+                const width = Math.min(86, window.innerWidth * .28);
+                button.style.width = `${width / scale}px`;
+                button.style.height = `${76 / scale}px`;
+                button.style.borderWidth = `${1 / scale}px`;
+                button.style.borderRadius = `${10 / scale}px`;
+                button.style.fontSize = `${(button === dpadFire ? 16 : 27.2) / scale}px`;
+            });
+            dpad.style.gap = `${10 / scale}px`;
+            dpad.style.paddingTop = `${14 / scale}px`;
+            dpad.style.paddingBottom = `${4 / scale}px`;
+        }
         const widthScale = Math.min(1, availW / GAME_W);
         let scale = widthScale;
         if (mobileLayout) {
@@ -1394,11 +1371,13 @@
                     button.style.fontSize = `${14.4 / scale}px`;
                     button.style.gap = `${5 / scale}px`;
                 });
+                scaleTouchControls(scale);
                 const naturalH = gameWrapper.offsetHeight;
                 const nextScale = Math.min(widthScale, (window.innerHeight - 16) / naturalH);
                 if (Math.abs(nextScale - scale) < 0.001) break;
                 scale = nextScale;
             }
+            scaleTouchControls(scale);
         } else {
             buttons.forEach(button => {
                 button.style.removeProperty('min-height');
@@ -1408,6 +1387,16 @@
                 button.style.removeProperty('font-size');
                 button.style.removeProperty('gap');
             });
+            touchControls.forEach(button => {
+                button.style.removeProperty('width');
+                button.style.removeProperty('height');
+                button.style.removeProperty('border-width');
+                button.style.removeProperty('border-radius');
+                button.style.removeProperty('font-size');
+            });
+            dpad.style.removeProperty('gap');
+            dpad.style.removeProperty('padding-top');
+            dpad.style.removeProperty('padding-bottom');
         }
 
         gameWrapper.style.setProperty('--mobile-scale', scale);

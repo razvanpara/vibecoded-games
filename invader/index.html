@@ -198,6 +198,8 @@
             cursor: pointer;
         }
         .dpad-btn.pressed { background: rgba(244,63,94,.3); }
+        .dpad-btn.fire-btn { border-color: rgba(244,63,94,.65); background: rgba(190,18,60,.35); font-size: 1rem; font-weight: 700; }
+        .dpad-btn.fire-btn.pressed { background: rgba(244,63,94,.65); }
         @media (pointer: coarse), (max-width: 700px) { .dpad-container { display: flex; } }
         @media (max-width: 520px) {
             body { padding: 14px 9px; }
@@ -242,7 +244,7 @@
                 padding-top: 14px;
                 padding-bottom: 4px;
             }
-            .dpad-btn { width: 86px; height: 76px; font-size: 1.7rem; }
+            .dpad-btn { width: min(86px, 28vw); height: 76px; font-size: 1.7rem; }
             .btn { min-height: 48px; padding: 11px 13px; font-size: .9rem; }
             .btn-large { min-height: 56px; padding: 13px 28px; }
         }
@@ -307,9 +309,10 @@
             </div>
         </div>
 
-        <div class="dpad-container" aria-label="Touch movement controls">
+        <div class="dpad-container" aria-label="Touch game controls">
             <button class="dpad-btn" id="dpadLeft" type="button" aria-label="Move left">◀</button>
             <button class="dpad-btn" id="dpadRight" type="button" aria-label="Move right">▶</button>
+            <button class="dpad-btn fire-btn" id="dpadFire" type="button" aria-label="Fire">FIRE</button>
         </div>
     </main>
 
@@ -841,6 +844,7 @@
         }
         bindHoldButton(document.getElementById('dpadLeft'), 'left');
         bindHoldButton(document.getElementById('dpadRight'), 'right');
+        bindHoldButton(document.getElementById('dpadFire'), 'fire');
 
         function togglePause() {
             if (!gameRunning) return;
