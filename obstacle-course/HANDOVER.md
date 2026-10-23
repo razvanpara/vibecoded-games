@@ -5,7 +5,7 @@
 Obstacle Course is a single-player browser survival game in the same arcade style as Block Invader. Move the smaller ship left and right to avoid groups of colored blocks that fall from the top. Survive as long as possible; contact with any block ends the game. Blocks that pass the bottom edge disappear.
 
 - `obstacle-course/index.html` contains the entire game: HTML/CSS, canvas drawing, game logic, controls, and synthesized audio.
-- Start the workspace's Node.js server with `npm start`; `server.js` serves this game at `http://localhost:3000/obstacle-course`. The root URL remains the Snake game.
+- Open the root `index.html` in a browser to access the arcade collection, or open `obstacle-course/index.html` directly. No Node server or build step is required.
 - No game-specific dependencies, build scripts, or automated tests are configured. Google Fonts are external; visuals use Canvas and sound uses Web Audio.
 
 ## Gameplay

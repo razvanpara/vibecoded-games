@@ -7,8 +7,8 @@ Bounce Destroyer is a standalone browser arcade game inspired by brick-breaker g
 ## Files and runtime
 
 - `bounce-destroyer/index.html` contains the complete game: markup, styles, canvas rendering, game state, physics, controls, and audio.
-- `server.js` serves it at `http://localhost:3000/bounce-destroyer`; the workspace root serves the Snake game.
-- Run `npm start` from the workspace to launch the native Node.js server on port 3000 by default. There are no game dependencies or build/test scripts.
+- Open the root `index.html` in a browser to access the arcade collection, or open `bounce-destroyer/index.html` directly. No Node server or build step is required.
+- There are no game dependencies or build/test scripts.
 - Outfit and JetBrains Mono fonts are loaded from Google Fonts. Graphics and sound effects use native Canvas and Web Audio APIs.
 
 ## Gameplay and controls

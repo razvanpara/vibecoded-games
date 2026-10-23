@@ -7,9 +7,8 @@ Block Destroyer is a single-player, browser-based arcade shooter in the same vis
 ## Files and runtime
 
 - `destroyer/index.html` contains the complete game: markup, styling, canvas rendering, game state, input handling, audio, and responsive layout.
-- `server.js` is a small Node.js static-file server. `npm start` starts it on port 3000 by default.
-- `package.json` has no game/build dependencies and no test, lint, or build scripts.
-- The server maps `/` to `snake/index.html`; open `http://localhost:3000/block-destroyer` to play this game. Alternatively, open `block-destroyer/index.html` directly in a modern browser.
+- Open the root `index.html` in a browser to access the arcade collection. You can also launch `destroyer/index.html` directly; no Node server or build step is required.
+- There are no game/build dependencies or test, lint, and build scripts.
 - Google Fonts (Outfit and JetBrains Mono) are loaded from Google Fonts; the game otherwise uses native Canvas and Web Audio APIs without image or audio assets.
 
 ## Gameplay and controls
@@ -40,4 +39,4 @@ The canvas uses a fixed internal resolution and the wrapper is CSS-scaled to fit
 - The HUD displays three hearts, but `lives` is currently cosmetic: it is initialized/reset to 3 and is not decremented. Any block reaching the ground or overlapping the ship immediately triggers game over. Preserve that behavior unless implementing an actual lives mechanic.
 - `fireHeld`, `player.shooting`, each block's `hp`, and `lowestAliveRow()` appear unused in current gameplay. Check references before building on them or removing them.
 - The animation loop updates movement and effects frame-by-frame (some timing is delta-based, some speeds are per frame). Take care when changing frame timing or making speed behavior independent of refresh rate.
-- `npm start` only serves files; there is no automated test suite. Verify gameplay in a browser after changes, including start/pause/restart, keyboard and touch controls, level progression, collisions, sound toggle, and narrow viewport scaling.
+- There is no automated test suite. Verify gameplay in a browser after changes, including start/pause/restart, keyboard and touch controls, level progression, collisions, sound toggle, and narrow viewport scaling.

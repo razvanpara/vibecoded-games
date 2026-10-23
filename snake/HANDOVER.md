@@ -5,10 +5,9 @@ The project is a browser game featuring persistent multi-colored trailing square
 
 - **Workspace Path**: `d:\_dev\my-playground`
 - **Entry Points**:
-  - [index.html](file:///d:/_dev/my-playground/index.html): Self-contained UI, CSS arcade styling, canvas particle engine, synthesized Web Audio, and game logic.
-  - [server.js](file:///d:/_dev/my-playground/server.js): Minimal native Node.js HTTP server.
-  - [package.json](file:///d:/_dev/my-playground/package.json): NPM scripts (`npm start`).
-- **Server Address**: `http://localhost:3000` (runs in background with `BypassSandbox: true`).
+  - `index.html` at the workspace root: Static arcade landing page linking to each game.
+  - `snake/index.html`: Self-contained Snake UI, CSS, canvas effects, synthesized Web Audio, and game logic.
+- Open the root `index.html` in a browser to choose a game, or open `snake/index.html` directly. No Node server or build step is required.
 
 ---
 
@@ -46,6 +45,8 @@ The project is a browser game featuring persistent multi-colored trailing square
 ---
 
 ## 3. Controls Reference
+
+The game opens with a start screen. Select **Start Game** to begin; Auto Run is enabled by default on each start/restart and can be toggled off afterward.
 
 | Control | Action |
 | :--- | :--- |

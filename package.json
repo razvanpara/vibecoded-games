@@ -1,15 +1,11 @@
 {
-  "name": "viewport-game",
+  "name": "arcade-lab",
   "version": "1.0.0",
-  "description": "A simple web game with an 800x600 viewport and WASD movement",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
+  "description": "A static launcher for a collection of browser arcade games",
   "keywords": [
-    "game",
-    "viewport",
-    "wasd"
+    "arcade",
+    "games",
+    "static"
   ],
   "author": "",
   "license": "MIT"

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d16">
+    <meta name="description" content="Pick a game and jump into the Arcade Lab collection.">
+    <title>Arcade Lab — Pick your next game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #090d16;
+            --surface: rgba(20, 28, 45, .82);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --line: rgba(148, 163, 184, .15);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            padding: 32px 22px 48px;
+            overflow-x: hidden;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at 7% 0%, rgba(99,102,241,.18), transparent 38rem),
+                radial-gradient(ellipse at 93% 18%, rgba(56,189,248,.12), transparent 34rem),
+                var(--bg);
+            font-family: Outfit, system-ui, sans-serif;
+        }
+        body::before {
+            position: fixed;
+            z-index: -1;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+            background-size: 42px 42px;
+            content: "";
+            mask-image: linear-gradient(to bottom, black, transparent 82%);
+            pointer-events: none;
+        }
+        .shell { width: min(1120px, 100%); margin-inline: auto; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 68px; }
+        .brand { display: inline-flex; align-items: center; gap: 11px; color: var(--text); text-decoration: none; }
+        .brand-mark {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            border: 1px solid rgba(129,140,248,.38);
+            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(99,102,241,.25), rgba(56,189,248,.12));
+            color: #c4b5fd;
+            font-size: 20px;
+            box-shadow: 0 0 28px rgba(99,102,241,.18);
+        }
+        .brand-name { font-size: 1rem; font-weight: 800; letter-spacing: .035em; }
+        .top-note { color: var(--muted); font: 500 .72rem "DM Mono", monospace; letter-spacing: .09em; text-transform: uppercase; }
+        .hero { max-width: 720px; margin-bottom: 38px; }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 17px;
+            color: #a5b4fc;
+            font: 500 .72rem "DM Mono", monospace;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+        }
+        .eyebrow::before { width: 20px; height: 1px; background: #818cf8; content: ""; }
+        h1 { margin: 0; font-size: clamp(3rem, 9vw, 6rem); font-weight: 800; letter-spacing: -.075em; line-height: .98; }
+        h1 span {
+            background: linear-gradient(105deg, #67e8f9 5%, #818cf8 48%, #f0abfc 96%);
+            color: transparent;
+            background-clip: text;
+        }
+        .hero-copy { max-width: 500px; margin: 20px 0 0; color: #a3afc2; font-size: clamp(1rem, 2.3vw, 1.14rem); line-height: 1.65; }
+        .collection-head { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; margin-bottom: 17px; }
+        h2 { margin: 0; font-size: 1.05rem; font-weight: 700; letter-spacing: -.015em; }
+        .collection-count { color: #718096; font: 500 .72rem "DM Mono", monospace; }
+        .game-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 17px; }
+        .game-card {
+            --accent: #38bdf8;
+            --accent-rgb: 56, 189, 248;
+            grid-column: span 2;
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 17px;
+            background: linear-gradient(155deg, rgba(25,34,53,.96), rgba(13,19,32,.96));
+            color: inherit;
+            text-decoration: none;
+            box-shadow: 0 12px 30px rgba(0,0,0,.14);
+            transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+        }
+        .game-card:nth-child(1) { grid-column: span 3; }
+        .game-card:nth-child(2) { grid-column: span 3; }
+        .game-card:hover, .game-card:focus-visible {
+            transform: translateY(-5px);
+            border-color: rgba(var(--accent-rgb), .56);
+            box-shadow: 0 18px 42px rgba(0,0,0,.3), 0 0 26px rgba(var(--accent-rgb), .09);
+            outline: none;
+        }
+        .snake { --accent: #34d399; --accent-rgb: 52, 211, 153; }
+        .destroyer { --accent: #fb7185; --accent-rgb: 251, 113, 133; }
+        .invader { --accent: #fbbf24; --accent-rgb: 251, 191, 36; }
+        .bounce { --accent: #a78bfa; --accent-rgb: 167, 139, 250; }
+        .obstacle { --accent: #67e8f9; --accent-rgb: 103, 232, 249; }
+        .art {
+            position: relative;
+            display: grid;
+            height: 184px;
+            overflow: hidden;
+            place-items: center;
+            border-bottom: 1px solid rgba(255,255,255,.055);
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(var(--accent-rgb), .15), transparent 62%),
+                linear-gradient(160deg, rgba(var(--accent-rgb), .065), transparent 68%),
+                #0b1220;
+        }
+        .art::before {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+            background-size: 28px 28px;
+            content: "";
+            mask-image: radial-gradient(ellipse, black, transparent 76%);
+        }
+        .art svg { position: relative; width: 90%; max-width: 430px; height: 156px; overflow: visible; }
+        .card-info { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 17px 18px 18px; }
+        .card-text { min-width: 0; }
+        .card-title { margin: 0; font-size: 1.02rem; font-weight: 700; letter-spacing: -.02em; }
+        .card-description { margin: 5px 0 0; color: var(--muted); font-size: .82rem; line-height: 1.45; }
+        .play-mark {
+            display: grid;
+            flex: 0 0 34px;
+            width: 34px;
+            height: 34px;
+            place-items: center;
+            border: 1px solid rgba(var(--accent-rgb), .25);
+            border-radius: 50%;
+            background: rgba(var(--accent-rgb), .1);
+            color: var(--accent);
+            font-size: 14px;
+            transition: background .2s ease, transform .2s ease;
+        }
+        .game-card:hover .play-mark { transform: translateX(2px); background: rgba(var(--accent-rgb), .2); }
+        footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: #718096; font: 400 .7rem "DM Mono", monospace; }
+        @media (max-width: 780px) {
+            body { padding: 24px 16px 36px; }
+            .topbar { margin-bottom: 54px; }
+            .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+            .game-card, .game-card:nth-child(n) { grid-column: auto; }
+            .game-card:last-child { grid-column: span 2; }
+            .art { height: 160px; }
+        }
+        @media (max-width: 500px) {
+            body { padding: 20px 13px 28px; }
+            .topbar { margin-bottom: 47px; }
+            .top-note { font-size: .6rem; }
+            .hero { margin-bottom: 31px; }
+            .game-grid { grid-template-columns: 1fr; gap: 12px; }
+            .game-card:last-child { grid-column: auto; }
+            .art { height: 165px; }
+            .card-info { padding: 14px 15px 16px; }
+            footer { flex-direction: column; gap: 7px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <a class="brand" href="./" aria-label="Arcade Lab home">
+                <span class="brand-mark" aria-hidden="true">✳</span>
+                <span class="brand-name">ARCADE LAB</span>
+            </a>
+            <span class="top-note">A little collection of big distractions</span>
+        </header>
+
+        <section class="hero" aria-labelledby="page-title">
+            <div class="eyebrow">The game room is open</div>
+            <h1 id="page-title">Pick your<br><span>next game.</span></h1>
+            <p class="hero-copy">Five tiny arcade worlds. Dodge, bounce, shoot, or grab a snack. Choose your game and jump straight in.</p>
+        </section>
+
+        <section aria-labelledby="collection-title">
+            <div class="collection-head">
+                <h2 id="collection-title">Choose your game</h2>
+                <span class="collection-count">01 — 05&nbsp; / &nbsp;ARCADE COLLECTION</span>
+            </div>
+
+            <div class="game-grid">
+                <a class="game-card snake" href="snake/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Illustration of a colorful snake chasing fruit">
+                            <defs>
+                                <linearGradient id="snakeBody" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6ee7b7"/><stop offset="1" stop-color="#059669"/></linearGradient>
+                                <radialGradient id="apple"><stop stop-color="#fda4af"/><stop offset="1" stop-color="#e11d48"/></radialGradient>
+                                <filter id="glowGreen"><feGaussianBlur stdDeviation="7"/></filter>
+                            </defs>
+                            <path d="M80 116c8-41 57-60 98-44 25 10 43 34 70 32 24-2 35-20 58-21" fill="none" stroke="#34d399" stroke-width="28" stroke-linecap="round" opacity=".16" filter="url(#glowGreen)"/>
+                            <path d="M80 116c8-41 57-60 98-44 25 10 43 34 70 32 24-2 35-20 58-21" fill="none" stroke="url(#snakeBody)" stroke-width="24" stroke-linecap="round"/>
+                            <path d="M110 93l10 13m21-32 8 15m23-17 4 17m27-5-3 17m28-2-7 15" stroke="#a7f3d0" stroke-width="3" stroke-linecap="round" opacity=".72"/>
+                            <circle cx="317" cy="82" r="19" fill="url(#snakeBody)"/>
+                            <circle cx="323" cy="77" r="3.5" fill="#f8fafc"/><circle cx="324" cy="77" r="1.6" fill="#0f172a"/>
+                            <path d="M326 63q9-15 20-5-9 8-18 8" fill="#4ade80"/>
+                            <path d="M375 73c-1-13 17-16 21-4 6-12 24-7 20 6-4 15-21 24-21 24s-18-12-20-26z" fill="url(#apple)"/>
+                            <path d="M394 69q0-13 11-16" fill="none" stroke="#a3e635" stroke-width="4" stroke-linecap="round"/>
+                            <circle cx="386" cy="75" r="3" fill="#fff" opacity=".7"/>
+                            <circle cx="57" cy="54" r="2" fill="#6ee7b7"/><circle cx="358" cy="127" r="2" fill="#6ee7b7"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Chroma Snake</h3><p class="card-description">Grow your colorful tail. Try not to bite off more than you can chew.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card destroyer" href="destroyer/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Illustration of a ship firing at descending blocks">
+                            <defs>
+                                <linearGradient id="redBlock" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fb7185"/><stop offset="1" stop-color="#be123c"/></linearGradient>
+                                <linearGradient id="shipBlue" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#7dd3fc"/><stop offset="1" stop-color="#0369a1"/></linearGradient>
+                                <filter id="glowRed"><feGaussianBlur stdDeviation="7"/></filter>
+                            </defs>
+                            <g opacity=".28" stroke="#94a3b8" stroke-width="1"><path d="M85 30h270M85 58h270M85 86h270M85 114h270M85 142h270"/><path d="M115 20v130m45-130v130m45-130v130m45-130v130m45-130v130m45-130v130"/></g>
+                            <rect x="117" y="27" width="48" height="28" rx="6" fill="url(#redBlock)"/><rect x="170" y="27" width="48" height="28" rx="6" fill="url(#redBlock)"/><rect x="276" y="27" width="48" height="28" rx="6" fill="url(#redBlock)"/>
+                            <rect x="223" y="61" width="48" height="28" rx="6" fill="url(#redBlock)"/><rect x="276" y="61" width="48" height="28" rx="6" fill="url(#redBlock)"/>
+                            <circle cx="247" cy="116" r="5" fill="#fef3c7" filter="url(#glowRed)"/><circle cx="247" cy="116" r="4" fill="#fbbf24"/>
+                            <path d="M240 122l-4 15m15-15 4 15" stroke="#f59e0b" stroke-width="2" opacity=".6"/>
+                            <path d="M192 147h111l-20-20h-71z" fill="url(#shipBlue)"/><path d="M237 129v-19h20v19" fill="#38bdf8"/><path d="M203 147l10-8v8m89 0-10-8v8" fill="#0284c7"/>
+                            <path d="M248 110v-9" stroke="#fde68a" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="86" cy="105" r="2" fill="#fb7185"/><circle cx="351" cy="45" r="2" fill="#fb7185"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Block Destroyer</h3><p class="card-description">Take aim and clear each descending formation before it reaches you.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card invader" href="invader/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Illustration of a ship shooting colorful falling invader blocks">
+                            <defs>
+                                <linearGradient id="goldBlock" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fde68a"/><stop offset="1" stop-color="#d97706"/></linearGradient>
+                                <linearGradient id="cyanShip" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#0891b2"/></linearGradient>
+                                <filter id="goldGlow"><feGaussianBlur stdDeviation="8"/></filter>
+                            </defs>
+                            <g opacity=".24" stroke="#64748b" stroke-width="1"><path d="M68 30h304M68 60h304M68 90h304M68 120h304"/><path d="M98 18v125m48-125v125m48-125v125m48-125v125m48-125v125m48-125v125"/></g>
+                            <rect x="103" y="26" width="46" height="28" rx="6" fill="#38bdf8"/><rect x="151" y="26" width="46" height="28" rx="6" fill="#f43f5e"/><rect x="199" y="26" width="46" height="28" rx="6" fill="url(#goldBlock)"/><rect x="247" y="26" width="46" height="28" rx="6" fill="#8b5cf6"/><rect x="295" y="26" width="46" height="28" rx="6" fill="#10b981"/>
+                            <rect x="151" y="59" width="46" height="28" rx="6" fill="#10b981"/><rect x="199" y="59" width="46" height="28" rx="6" fill="#38bdf8"/><rect x="247" y="59" width="46" height="28" rx="6" fill="#f43f5e"/>
+                            <path d="M213 106v21m14-21v21" stroke="#fde68a" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+                            <path d="M177 149h86l-16-20h-54z" fill="url(#cyanShip)"/><path d="M212 130v-15h17v15" fill="#67e8f9"/><path d="M186 149l9-7v7m59 0-9-7v7" fill="#0e7490"/>
+                            <circle cx="220" cy="111" r="5" fill="#fff7ed" filter="url(#goldGlow)"/><circle cx="220" cy="111" r="3" fill="#fff"/>
+                            <circle cx="82" cy="70" r="2" fill="#67e8f9"/><circle cx="365" cy="108" r="2" fill="#fda4af"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Block Invader</h3><p class="card-description">The waves keep coming. Move, fire, and hold the line.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card bounce" href="bounce-destroyer/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Illustration of a ball bouncing between blocks and a paddle">
+                            <defs>
+                                <linearGradient id="purpleBrick" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c4b5fd"/><stop offset="1" stop-color="#6d28d9"/></linearGradient>
+                                <radialGradient id="bounceBall"><stop stop-color="#fff"/><stop offset=".5" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/></radialGradient>
+                                <filter id="ballGlow"><feGaussianBlur stdDeviation="7"/></filter>
+                            </defs>
+                            <rect x="95" y="25" width="52" height="23" rx="5" fill="#38bdf8"/><rect x="152" y="25" width="52" height="23" rx="5" fill="url(#purpleBrick)"/><rect x="209" y="25" width="52" height="23" rx="5" fill="#f43f5e"/><rect x="266" y="25" width="52" height="23" rx="5" fill="#10b981"/>
+                            <rect x="124" y="54" width="52" height="23" rx="5" fill="#f59e0b"/><rect x="181" y="54" width="52" height="23" rx="5" fill="#38bdf8"/><rect x="238" y="54" width="52" height="23" rx="5" fill="url(#purpleBrick)"/>
+                            <path d="M131 143q55-79 116-44" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="5 7" opacity=".65"/>
+                            <circle cx="250" cy="98" r="15" fill="#f59e0b" opacity=".25" filter="url(#ballGlow)"/><circle cx="250" cy="98" r="9" fill="url(#bounceBall)"/>
+                            <rect x="172" y="139" width="110" height="13" rx="7" fill="#a78bfa"/><rect x="183" y="142" width="88" height="3" rx="2" fill="#ede9fe" opacity=".75"/>
+                            <circle cx="87" cy="109" r="2" fill="#c4b5fd"/><circle cx="344" cy="105" r="2" fill="#c4b5fd"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Bounce Destroyer</h3><p class="card-description">Keep the ball in play and bounce your way through the bricks.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card obstacle" href="obstacle-course/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Illustration of a small ship dodging falling blocks">
+                            <defs>
+                                <linearGradient id="obstacleBlock" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#0e7490"/></linearGradient>
+                                <linearGradient id="runnerShip" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c4b5fd"/><stop offset="1" stop-color="#4f46e5"/></linearGradient>
+                                <filter id="cyanGlow"><feGaussianBlur stdDeviation="7"/></filter>
+                            </defs>
+                            <g opacity=".2" stroke="#64748b" stroke-width="1"><path d="M83 35h274M83 70h274M83 105h274M83 140h274"/><path d="M118 20v130m51-130v130m51-130v130m51-130v130m51-130v130"/></g>
+                            <rect x="119" y="26" width="45" height="30" rx="6" fill="url(#obstacleBlock)"/><rect x="220" y="26" width="45" height="30" rx="6" fill="#f472b6"/><rect x="271" y="26" width="45" height="30" rx="6" fill="#fbbf24"/>
+                            <rect x="169" y="62" width="45" height="30" rx="6" fill="#8b5cf6"/><rect x="271" y="62" width="45" height="30" rx="6" fill="url(#obstacleBlock)"/>
+                            <path d="M141 58v21m124-21v21m51-21v21" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+                            <path d="M114 146h67l-13-17h-41z" fill="url(#runnerShip)"/><path d="M139 130v-11h15v11" fill="#a5b4fc"/>
+                            <path d="M103 153h92" stroke="#67e8f9" stroke-width="2" stroke-dasharray="5 7" opacity=".6"/>
+                            <circle cx="96" cy="62" r="2" fill="#67e8f9"/><circle cx="342" cy="113" r="2" fill="#67e8f9"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Obstacle Course</h3><p class="card-description">Keep moving. The only score that matters is how long you last.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+            </div>
+        </section>
+
+        <footer>
+            <span>MADE FOR THE LOVE OF PLAY</span>
+            <span>Pick a cabinet. Make a high score.</span>
+        </footer>
+    </main>
+</body>
+</html>

@@ -812,6 +812,15 @@
             </div>
 
             <!-- Game Over Modal -->
+            <div id="startModal" class="viewport-modal" style="display: flex;">
+                <h2 class="modal-title start">CHROMA SNAKE</h2>
+                <div class="modal-body">
+                    <p>Collect colorful food, grow your tail, and avoid the bomb.</p>
+                    <p style="font-size: 0.9rem; color: #94a3b8;">Auto Run starts enabled. Use the direction keys to steer.</p>
+                </div>
+                <button id="startBtn" class="btn btn-large">Start Game</button>
+            </div>
+
             <div id="gameOverModal" class="viewport-modal">
                 <h2 class="modal-title over">GAME OVER</h2>
                 <div class="modal-body">
@@ -885,6 +894,8 @@
         const speedVal = document.getElementById('speedVal');
         const gameOverModal = document.getElementById('gameOverModal');
         const pauseModal = document.getElementById('pauseModal');
+        const startModal = document.getElementById('startModal');
+        const startBtn = document.getElementById('startBtn');
         const finalScorePill = document.getElementById('finalScorePill');
         const newHighNotice = document.getElementById('newHighNotice');
 
@@ -897,6 +908,7 @@
         let wrapAround = true;
         let isGameOver = false;
         let isPaused = false;
+        let hasStarted = false;
         let score = 0;
         let highScore = parseInt(localStorage.getItem('chroma_snake_highscore') || '0', 10);
         let speed = 1; // 1 to 10
@@ -1235,7 +1247,7 @@
         }
 
         function move(dir) {
-            if (isGameOver || isPaused) return;
+            if (!hasStarted || isGameOver || isPaused) return;
 
             let dx = 0;
             let dy = 0;
@@ -1427,6 +1439,8 @@
             }
             isGameOver = false;
             isPaused = false;
+            hasStarted = true;
+            startModal.style.display = 'none';
             gameOverModal.style.display = 'none';
             pauseModal.style.display = 'none';
             travelingFoodIndex = -1;
@@ -1441,10 +1455,11 @@
             initSegments();
             spawnFood();
             render();
+            toggleAuto();
         }
 
         function togglePause() {
-            if (isGameOver) return;
+            if (!hasStarted || isGameOver) return;
             isPaused = !isPaused;
             if (isPaused) {
                 pauseModal.style.display = 'flex';
@@ -1456,7 +1471,7 @@
         }
 
         function toggleAuto() {
-            if (isGameOver || isPaused) return;
+            if (!hasStarted || isGameOver || isPaused) return;
             if (autoRunInterval) {
                 clearInterval(autoRunInterval);
                 autoRunInterval = null;
@@ -1500,6 +1515,7 @@
         }
 
         // Button Listeners
+        startBtn.addEventListener('click', resetGame);
         autoBtn.addEventListener('click', toggleAuto);
         teleportBtn.addEventListener('click', toggleTeleport);
         soundBtn.addEventListener('click', toggleSound);

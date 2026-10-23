@@ -7,8 +7,8 @@ Block Invader is a single-player browser arcade shooter. The player pilots a shi
 ## Files and runtime
 
 - `invader/index.html` is the complete game: HTML, CSS, canvas rendering, gameplay, input, and synthesized sound.
-- `server.js` serves `/invader` at `http://localhost:3000/invader`; the workspace root serves the Snake game.
-- `npm start` launches the native Node.js server on port 3000 by default. `package.json` has no game dependencies, build, lint, or test scripts.
+- Open the root `index.html` in a browser to access the arcade collection, or open `invader/index.html` directly. No Node server or build step is required.
+- There are no game dependencies or build, lint, or test scripts.
 - Google Fonts (Outfit and JetBrains Mono) are loaded externally. The game otherwise uses native Canvas and Web Audio APIs.
 
 ## Gameplay
