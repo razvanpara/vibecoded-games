@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Block Invader – Arcade Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── Design tokens (matches Chroma Snake) ── */
+        :root {
+            --bg-base:        #090d16;
+            --panel-bg:       rgba(22, 30, 49, 0.75);
+            --panel-border:   rgba(56, 189, 248, 0.20);
+            --accent-cyan:    #38bdf8;
+            --accent-indigo:  #6366f1;
+            --accent-emerald: #10b981;
+            --accent-amber:   #f59e0b;
+            --accent-rose:    #f43f5e;
+
+            /* canvas geometry exposed as CSS vars for convenience */
+            --cv-w: 800px;
+            --cv-h: 600px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0; padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(99,102,241,.15) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(56,189,248,.12) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(16,185,129,.08) 0%, transparent 60%);
+            color: #f8fafc;
+            font-family: 'Outfit', system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1.5rem 1rem;
+            overflow-x: hidden;
+            touch-action: pan-y;
+        }
+
+        /* ambient grid */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right,  rgba(255,255,255,.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,.02) 1px, transparent 1px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Outer wrapper ── */
+        .game-wrapper {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: top center;
+        }
+
+        /* ── Brand header ── */
+        .brand-header {
+            width: 806px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: .75rem;
+        }
+
+        .title-group {
+            display: flex;
+            align-items: baseline;
+            gap: .75rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            background: linear-gradient(135deg, #f43f5e 0%, #f97316 50%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(244,63,94,.25));
+        }
+
+        .title-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: .2rem .5rem;
+            border-radius: 9999px;
+            background: rgba(244,63,94,.12);
+            color: var(--accent-rose);
+            border: 1px solid rgba(244,63,94,.3);
+            letter-spacing: .08em;
+        }
+
+        /* ── HUD bar ── */
+        .hud-bar {
+            width: 806px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: .6rem 1rem;
+            margin-bottom: .75rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px -6px rgba(0,0,0,.5);
+        }
+
+        .hud-group {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            gap: .1rem;
+            background: rgba(15,23,42,.6);
+            border: 1px solid rgba(255,255,255,.06);
+            padding: .3rem .85rem;
+            border-radius: 8px;
+            min-width: 84px;
+        }
+
+        .stat-label {
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #94a3b8;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #f8fafc;
+            line-height: 1.1;
+        }
+
+        .stat-value.score     { color: var(--accent-rose); }
+        .stat-value.hi-score  { color: var(--accent-amber); }
+        .stat-value.level     { color: var(--accent-emerald); }
+
+        /* ── Buttons ── */
+        .btn {
+            background: rgba(30,41,59,.8);
+            color: #e2e8f0;
+            border: 1px solid rgba(148,163,184,.2);
+            padding: .45rem .85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: .85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            transition: all .15s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,.2);
+        }
+
+        .btn:hover {
+            background: rgba(244,63,94,.15);
+            color: var(--accent-rose);
+            border-color: rgba(244,63,94,.4);
+            transform: translateY(-1px);
+        }
+
+        .btn:active { transform: translateY(0); }
+
+        .btn.active {
+            background: rgba(16,185,129,.2);
+            color: #34d399;
+            border-color: rgba(16,185,129,.5);
+        }
+
+        /* ── Controls legend strip ── */
+        .controls-strip {
+            width: 806px;
+            display: flex;
+            align-items: center;
+            color: #94a3b8;
+            font-size: .82rem;
+            padding: 0 .25rem;
+            margin-bottom: .6rem;
+        }
+
+        .keys-legend {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            flex-wrap: wrap;
+        }
+
+        .key-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        kbd {
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-bottom: 2px solid #334155;
+            border-radius: 4px;
+            padding: .15rem .35rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0,0,0,.3);
+        }
+
+        /* ── Canvas / viewport ── */
+        #gameCanvas {
+            display: block;
+            width: 800px;
+            height: 600px;
+            border: 3px solid var(--accent-rose);
+            border-radius: 12px;
+            background: #0f1629;
+            box-shadow:
+                0 0 0 1px rgba(244,63,94,.2),
+                0 20px 40px -10px rgba(0,0,0,.7),
+                0 0 35px -10px rgba(244,63,94,.2);
+            cursor: none;
+        }
+
+        /* ── Overlay modals ── */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 3px; left: 3px; /* account for canvas border */
+            width: 800px;
+            height: 600px;
+            background: rgba(10,15,29,.88);
+            backdrop-filter: blur(8px);
+            border-radius: 9px;
+            z-index: 30;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.2rem;
+            animation: fadeIn .2s ease-out;
+        }
+
+        /* Position it over the canvas */
+        .canvas-wrap {
+            position: relative;
+            line-height: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(.97); }
+            to   { opacity: 1; transform: scale(1);   }
+        }
+
+        .modal-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            text-align: center;
+        }
+
+        .modal-title.over {
+            background: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 12px rgba(244,63,94,.4));
+        }
+
+        .modal-title.start {
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 12px rgba(56,189,248,.4));
+        }
+
+        .modal-title.pause {
+            background: linear-gradient(135deg, #f59e0b 0%, #fde047 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .6rem;
+            color: #cbd5e1;
+            font-size: 1.05rem;
+        }
+
+        .score-pill {
+            background: rgba(255,255,255,.05);
+            border: 1px solid rgba(255,255,255,.1);
+            padding: .4rem 1.2rem;
+            border-radius: 9999px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            color: var(--accent-rose);
+        }
+
+        .new-hi {
+            color: var(--accent-amber);
+            font-weight: 700;
+            font-size: .95rem;
+            display: none;
+            animation: pulse 1.2s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0%   { transform: scale(.95); opacity: .8; }
+            100% { transform: scale(1.05); opacity: 1; }
+        }
+
+        .btn-large {
+            padding: .75rem 2rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 14px rgba(244,63,94,.4);
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .btn-large:hover {
+            background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(244,63,94,.5);
+        }
+
+        /* ── Mobile D-pad ── */
+        .dpad-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin-top: 1rem;
+            touch-action: none;
+        }
+
+        .dpad-row {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dpad-btn {
+            width: 64px;
+            height: 64px;
+            background: rgba(30,41,59,.85);
+            border: 1px solid rgba(244,63,94,.3);
+            border-radius: 10px;
+            color: #e2e8f0;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,.4);
+            transition: background .1s, transform .08s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .dpad-btn:active, .dpad-btn.pressed {
+            background: rgba(244,63,94,.25);
+            border-color: var(--accent-rose);
+            transform: scale(.93);
+        }
+
+        .dpad-fire {
+            width: 64px;
+            height: 64px;
+            background: rgba(244,63,94,.2);
+            border: 1px solid rgba(244,63,94,.5);
+            border-radius: 50%;
+            color: #fb7185;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(244,63,94,.3);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .dpad-fire:active, .dpad-fire.pressed {
+            background: rgba(244,63,94,.45);
+            transform: scale(.93);
+        }
+
+        .dpad-spacer { width: 64px; height: 64px; }
+
+        @media (max-width: 860px), (pointer: coarse) {
+            .dpad-container { display: flex; }
+        }
+
+        @media (max-width: 480px) {
+            .controls-strip { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper" id="gameWrapper">
+
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <div class="title-group">
+                <h1>Block Destroyer</h1>
+                <span class="title-badge">Arcade Edition</span>
+            </div>
+            <div class="hud-group">
+                <button class="btn" id="soundBtn" title="Toggle Sound (M)">🔊 Sound: ON</button>
+                <button class="btn" id="pauseBtn" title="Pause (P)">⏸ Pause</button>
+            </div>
+        </div>
+
+        <!-- HUD Bar -->
+        <div class="hud-bar">
+            <div class="hud-group">
+                <div class="stat-card">
+                    <span class="stat-label">Score</span>
+                    <span id="scoreVal" class="stat-value score">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">High Score</span>
+                    <span id="hiScoreVal" class="stat-value hi-score">0</span>
+                </div>
+            </div>
+            <div class="hud-group">
+                <div class="stat-card">
+                    <span class="stat-label">Level</span>
+                    <span id="levelVal" class="stat-value level">1</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Lives</span>
+                    <span id="livesVal" class="stat-value" style="color:#f43f5e">❤️❤️❤️</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls strip -->
+        <div class="controls-strip">
+            <div class="keys-legend">
+                <span class="key-hint"><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> Move</span>
+                <span class="key-hint"><kbd>Space</kbd> Fire</span>
+                <span class="key-hint"><kbd>P</kbd> Pause</span>
+                <span class="key-hint"><kbd>M</kbd> Mute</span>
+                <span class="key-hint"><kbd>R</kbd> Restart</span>
+                <span class="key-hint"><kbd>−</kbd>/<kbd>+</kbd> Fall speed</span>
+                <span id="fallSpeedVal" class="key-hint">Drop: 5.0 s</span>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+            <!-- Start Modal -->
+            <div class="modal-overlay" id="startModal">
+                <h2 class="modal-title start">BLOCK DESTROYER</h2>
+                <div class="modal-body">
+                    <p>Destroy all blocks before they reach you!</p>
+                    <p style="font-size:.9rem;color:#94a3b8">Blocks speed up after every drop. Use − / + to set the starting speed.</p>
+                </div>
+                <button class="btn-large" id="startBtn">Start Game</button>
+            </div>
+
+            <!-- Pause Modal -->
+            <div class="modal-overlay" id="pauseModal">
+                <h2 class="modal-title pause">PAUSED</h2>
+                <div class="modal-body">
+                    <p>Press <kbd>P</kbd> or click Resume to continue</p>
+                </div>
+                <button class="btn-large" id="resumeBtn">Resume</button>
+            </div>
+
+            <!-- Game Over Modal -->
+            <div class="modal-overlay" id="gameOverModal">
+                <h2 class="modal-title over">GAME OVER</h2>
+                <div class="modal-body">
+                    <div id="finalScorePill" class="score-pill">Score: 0</div>
+                    <div id="newHiNotice" class="new-hi">★ NEW HIGH SCORE! ★</div>
+                    <p style="font-size:.9rem;color:#94a3b8" id="deathReason">A block reached the ground.</p>
+                </div>
+                <button class="btn-large" id="restartBtn">Play Again (R)</button>
+            </div>
+        </div>
+
+        <!-- Mobile D-pad -->
+        <div class="dpad-container" id="dpad">
+            <div class="dpad-row">
+                <button class="dpad-btn" id="dpadLeft"  aria-label="Left">◀</button>
+                <div   class="dpad-spacer"></div>
+                <button class="dpad-btn" id="dpadRight" aria-label="Right">▶</button>
+                <div style="width:20px"></div>
+                <button class="dpad-fire" id="dpadFire" aria-label="Fire">🔴</button>
+            </div>
+        </div>
+
+    </div><!-- /.game-wrapper -->
+
+    <script>
+    // ─────────────────────────────────────────────────────────────────────────
+    //  BLOCK DESTROYER — main script
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const canvas       = document.getElementById('gameCanvas');
+    const ctx          = canvas.getContext('2d');
+    const scoreValEl   = document.getElementById('scoreVal');
+    const hiScoreValEl = document.getElementById('hiScoreVal');
+    const levelValEl   = document.getElementById('levelVal');
+    const livesValEl   = document.getElementById('livesVal');
+    const soundBtn     = document.getElementById('soundBtn');
+    const pauseBtn     = document.getElementById('pauseBtn');
+    const startModal   = document.getElementById('startModal');
+    const pauseModal   = document.getElementById('pauseModal');
+    const gameOverModal= document.getElementById('gameOverModal');
+    const finalScorePill = document.getElementById('finalScorePill');
+    const newHiNotice  = document.getElementById('newHiNotice');
+    const deathReason  = document.getElementById('deathReason');
+    const startBtn     = document.getElementById('startBtn');
+    const restartBtn   = document.getElementById('restartBtn');
+    const resumeBtn    = document.getElementById('resumeBtn');
+    const dpadLeft     = document.getElementById('dpadLeft');
+    const dpadRight    = document.getElementById('dpadRight');
+    const dpadFire     = document.getElementById('dpadFire');
+    const gameWrapper  = document.getElementById('gameWrapper');
+    const fallSpeedValEl = document.getElementById('fallSpeedVal');
+
+    // ── Geometry ──────────────────────────────────────────────────────────────
+    const CW = 800;   // canvas width
+    const CH = 600;   // canvas height
+    const COLS = 16;  // block grid columns
+    const ROWS = 7;   // enemy rows that spawn
+    const BW = Math.floor(CW / COLS);   // block width  = 50
+    const BH = 36;                      // block height
+    const BLOCK_ROWS_Y_START = 4;       // top padding in px before row 0
+    const ROW_GAP  = BH + 4;            // spacing between rows = 40
+    const GROUND_Y = CH - 60;           // player floor  (pixels from top)
+    const PLAYER_W = 56;
+    const PLAYER_H = 30;
+    const BULLET_R = 5;                 // projectile radius
+    const BULLET_SPEED = 10;            // px per frame
+    const PLAYER_SPEED = 5;             // px per frame
+
+    // ── Colour palette for blocks (same family as snake) ──────────────────────
+    const BLOCK_GRADIENTS = [
+        ['#38bdf8','#0284c7'], // Sky blue
+        ['#f43f5e','#be123c'], // Crimson
+        ['#10b981','#047857'], // Emerald
+        ['#8b5cf6','#6d28d9'], // Purple
+        ['#f59e0b','#d97706'], // Amber
+        ['#ec4899','#be185d'], // Pink
+        ['#84cc16','#4d7c0f'], // Lime
+        ['#f97316','#c2410c'], // Orange
+        ['#14b8a6','#0f766e'], // Teal
+        ['#a855f7','#7e22ce'], // Violet
+        ['#06b6d4','#0e7490'], // Cyan
+        ['#e11d48','#9f1239'], // Rose
+        ['#6366f1','#4338ca'], // Indigo
+    ];
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let score = 0;
+    let hiScore = parseInt(localStorage.getItem('destroyer_hiscore') || '0', 10);
+    let level = 1;
+    let lives = 3;
+    let gameRunning = false;
+    let isPaused = false;
+    let soundEnabled = true;
+
+    // blocks[ row ][ col ] = { alive, gradIdx, hp } ; null if dead
+    let blocks = [];
+    let player = { x: CW / 2 - PLAYER_W / 2, y: GROUND_Y, shooting: false };
+    let bullets = [];      // { x, y }
+    let particles = [];    // explosion FX
+    let floaters = [];     // "+1" score floaters
+
+    // timing
+    let advanceTimer = 0;   // counts up; when ≥ advanceInterval → advance blocks
+    const MIN_ADVANCE_INTERVAL = 500;
+    const MAX_ADVANCE_INTERVAL = 15000;
+    const FALL_SPEED_ADJUSTMENT = 250;
+    let startingAdvanceInterval = 5000;
+    let advanceInterval = startingAdvanceInterval; // ms between drops
+    let lastTime = 0;
+    let rafId = null;
+
+    // input
+    const keys = { left: false, right: false, fire: false };
+    let fireHeld = false;  // prevent auto-fire; require re-press
+    let fireCooldown = 0;  // ms
+
+    hiScoreValEl.innerText = hiScore;
+
+    // ── Audio (Web Audio API — zero external files) ────────────────────────────
+    let audioCtx = null;
+    function getAudio() {
+        if (!audioCtx) {
+            const Cls = window.AudioContext || window.webkitAudioContext;
+            if (Cls) audioCtx = new Cls();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+
+    function playSound(type) {
+        if (!soundEnabled) return;
+        const ac = getAudio();
+        if (!ac) return;
+        const now = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain);
+        gain.connect(ac.destination);
+
+        if (type === 'shoot') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(660, now);
+            osc.frequency.exponentialRampToValueAtTime(330, now + .08);
+            gain.gain.setValueAtTime(.12, now);
+            gain.gain.exponentialRampToValueAtTime(.001, now + .08);
+            osc.start(now); osc.stop(now + .08);
+        } else if (type === 'hit') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + .1);
+            gain.gain.setValueAtTime(.22, now);
+            gain.gain.exponentialRampToValueAtTime(.001, now + .12);
+            osc.start(now); osc.stop(now + .12);
+        } else if (type === 'advance') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(110, now);
+            osc.frequency.linearRampToValueAtTime(90, now + .12);
+            gain.gain.setValueAtTime(.15, now);
+            gain.gain.exponentialRampToValueAtTime(.001, now + .15);
+            osc.start(now); osc.stop(now + .15);
+        } else if (type === 'gameover') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(240, now);
+            osc.frequency.exponentialRampToValueAtTime(60, now + .55);
+            gain.gain.setValueAtTime(.3, now);
+            gain.gain.exponentialRampToValueAtTime(.001, now + .55);
+            osc.start(now); osc.stop(now + .55);
+        } else if (type === 'levelup') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.linearRampToValueAtTime(880, now + .15);
+            osc.frequency.linearRampToValueAtTime(1320, now + .3);
+            gain.gain.setValueAtTime(.2, now);
+            gain.gain.exponentialRampToValueAtTime(.001, now + .35);
+            osc.start(now); osc.stop(now + .35);
+        }
+    }
+
+    // ── Block helpers ─────────────────────────────────────────────────────────
+    // `rowOffset` tracks how many steps the grid has advanced downward.
+    // rowY(r) gives the canvas-Y of logical row r, accounting for the offset.
+    let rowOffset = 0;
+
+    function rowY(r) {
+        return BLOCK_ROWS_Y_START + (r + rowOffset) * ROW_GAP;
+    }
+
+    function blockBottom(r) {
+        return rowY(r) + BH;
+    }
+
+    function buildBlocks() {
+        rowOffset = 0;
+        const numGrad = BLOCK_GRADIENTS.length;
+        blocks = [];
+        for (let r = 0; r < ROWS; r++) {
+            blocks[r] = [];
+            for (let c = 0; c < COLS; c++) {
+                blocks[r][c] = {
+                    alive: true,
+                    gradIdx: (r * 3 + c * 2) % numGrad,
+                    hp: 1,
+                };
+            }
+        }
+    }
+
+    function aliveCount() {
+        let n = 0;
+        for (let r = 0; r < blocks.length; r++)
+            if (blocks[r])
+                for (let c = 0; c < COLS; c++)
+                    if (blocks[r][c] && blocks[r][c].alive) n++;
+        return n;
+    }
+
+    // Return the lowest occupied row index (-1 if none)
+    function lowestAliveRow() {
+        for (let r = blocks.length - 1; r >= 0; r--)
+            for (let c = 0; c < COLS; c++)
+                if (blocks[r][c] && blocks[r][c].alive) return r;
+        return -1;
+    }
+
+    // Advance all blocks one step downward
+    function advanceBlocks() {
+        playSound('advance');
+        rowOffset += 1;
+        advanceInterval = Math.max(MIN_ADVANCE_INTERVAL, advanceInterval * 0.95);
+        updateFallSpeedLabel();
+    }
+
+    function updateFallSpeedLabel() {
+        fallSpeedValEl.innerText = `Drop: ${(advanceInterval / 1000).toFixed(1)} s`;
+    }
+
+    function adjustFallSpeed(direction) {
+        const previousStartingInterval = startingAdvanceInterval;
+        startingAdvanceInterval = Math.max(
+            MIN_ADVANCE_INTERVAL,
+            Math.min(MAX_ADVANCE_INTERVAL, startingAdvanceInterval - direction * FALL_SPEED_ADJUSTMENT)
+        );
+        const speedScale = startingAdvanceInterval / previousStartingInterval;
+        advanceInterval = Math.max(MIN_ADVANCE_INTERVAL, advanceInterval * speedScale);
+        advanceTimer = Math.min(advanceTimer, advanceInterval);
+        updateFallSpeedLabel();
+    }
+
+    // ── Particle system ───────────────────────────────────────────────────────
+    function spawnParticles(cx, cy, colorA, colorB, count = 14) {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const spd   = 1.5 + Math.random() * 5;
+            const hue   = Math.floor(Math.random() * 360);
+            particles.push({
+                x: cx, y: cy,
+                vx: Math.cos(angle) * spd,
+                vy: Math.sin(angle) * spd,
+                r: 2 + Math.random() * 4,
+                color: Math.random() < .5 ? colorA : colorB,
+                life: 1, decay: .03 + Math.random() * .03,
+            });
+        }
+    }
+
+    // ── Score floaters ────────────────────────────────────────────────────────
+    function spawnFloater(x, y, text) {
+        floaters.push({ x, y, text, life: 1, vy: -1.2 });
+    }
+
+    // ── Player ────────────────────────────────────────────────────────────────
+    function drawPlayer() {
+        const px = player.x;
+        const py = player.y;
+        const pw = PLAYER_W;
+        const ph = PLAYER_H;
+
+        // Body gradient
+        const grad = ctx.createLinearGradient(px, py, px, py + ph);
+        grad.addColorStop(0, '#38bdf8');
+        grad.addColorStop(1, '#0369a1');
+        ctx.save();
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur  = 12;
+
+        // Base ship body (rounded rect)
+        ctx.beginPath();
+        ctx.roundRect(px, py + 8, pw, ph - 8, [4, 4, 8, 8]);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Cockpit bubble
+        ctx.beginPath();
+        ctx.ellipse(px + pw / 2, py + 10, 10, 7, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(186,230,253,.7)';
+        ctx.fill();
+
+        // Canon nozzle
+        ctx.beginPath();
+        ctx.roundRect(px + pw / 2 - 3, py, 6, 12, [3, 3, 0, 0]);
+        ctx.fillStyle = '#7dd3fc';
+        ctx.fill();
+
+        // Wing accents
+        ctx.beginPath();
+        ctx.moveTo(px,         py + ph);
+        ctx.lineTo(px + 14,    py + ph - 6);
+        ctx.lineTo(px + 14,    py + ph);
+        ctx.fillStyle = '#0284c7';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(px + pw,    py + ph);
+        ctx.lineTo(px + pw - 14, py + ph - 6);
+        ctx.lineTo(px + pw - 14, py + ph);
+        ctx.fillStyle = '#0284c7';
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // ── Bullets ───────────────────────────────────────────────────────────────
+    function fireBullet() {
+        if (fireCooldown > 0) return;
+        bullets.push({ x: player.x + PLAYER_W / 2, y: player.y });
+        fireCooldown = 250 / 3; // ms — 3x the previous fire rate
+        playSound('shoot');
+    }
+
+    function drawBullet(b) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, BULLET_R, 0, Math.PI * 2);
+
+        const grad = ctx.createRadialGradient(b.x - 1, b.y - 1, 1, b.x, b.y, BULLET_R);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(.4, '#fde68a');
+        grad.addColorStop(1, '#f59e0b');
+
+        ctx.fillStyle = grad;
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur  = 10;
+        ctx.fill();
+
+        // Trailing glow tail
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y + BULLET_R);
+        ctx.lineTo(b.x - 3, b.y + BULLET_R + 14);
+        ctx.lineTo(b.x + 3, b.y + BULLET_R + 14);
+        ctx.closePath();
+        const tailGrad = ctx.createLinearGradient(b.x, b.y + BULLET_R, b.x, b.y + BULLET_R + 14);
+        tailGrad.addColorStop(0, 'rgba(245,158,11,.5)');
+        tailGrad.addColorStop(1, 'rgba(245,158,11,0)');
+        ctx.fillStyle = tailGrad;
+        ctx.shadowBlur = 0;
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // ── Block drawing ─────────────────────────────────────────────────────────
+    // cache gradient objects so we don't recreate every frame
+    const gradCache = {};
+    function getBlockGrad(gradIdx, x, y) {
+        const key = `${gradIdx}_${x}_${y}`;
+        if (gradCache[key]) return gradCache[key];
+        const [c1, c2] = BLOCK_GRADIENTS[gradIdx];
+        const g = ctx.createLinearGradient(x, y, x, y + BH);
+        g.addColorStop(0, c1);
+        g.addColorStop(1, c2);
+        gradCache[key] = g;
+        return g;
+    }
+
+    function drawBlock(r, c, blk) {
+        const x = c * BW + 2;
+        const y = rowY(r) + 1;
+        const w = BW - 4;
+        const h = BH - 2;
+
+        ctx.save();
+        ctx.shadowColor = BLOCK_GRADIENTS[blk.gradIdx][0];
+        ctx.shadowBlur  = 6;
+
+        // Main body
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 6);
+        ctx.fillStyle = getBlockGrad(blk.gradIdx, x, y);
+        ctx.fill();
+
+        // Shine overlay
+        ctx.beginPath();
+        ctx.roundRect(x + 3, y + 3, w - 6, (h / 2) - 4, [4, 4, 0, 0]);
+        ctx.fillStyle = 'rgba(255,255,255,.2)';
+        ctx.fill();
+
+        // Inner subtle border
+        ctx.beginPath();
+        ctx.roundRect(x + 1, y + 1, w - 2, h - 2, 5);
+        ctx.strokeStyle = 'rgba(255,255,255,.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // ── Ground danger line ────────────────────────────────────────────────────
+    function drawGround() {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(244,63,94,.35)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, GROUND_Y - 2);
+        ctx.lineTo(CW, GROUND_Y - 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+    }
+
+    // ── Particles & floaters ─────────────────────────────────────────────────
+    function updateParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x  += p.vx;
+            p.y  += p.vy;
+            p.vx *= .94;
+            p.vy *= .94;
+            p.life -= p.decay;
+            if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+            ctx.save();
+            ctx.globalAlpha = p.life;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    function updateFloaters() {
+        for (let i = floaters.length - 1; i >= 0; i--) {
+            const f = floaters[i];
+            f.y += f.vy;
+            f.life -= .025;
+            if (f.life <= 0) { floaters.splice(i, 1); continue; }
+
+            ctx.save();
+            ctx.globalAlpha = f.life;
+            ctx.font = 'bold 14px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#f59e0b';
+            ctx.shadowColor = '#f59e0b';
+            ctx.shadowBlur = 8;
+            ctx.textAlign = 'center';
+            ctx.fillText(f.text, f.x, f.y);
+            ctx.restore();
+        }
+    }
+
+    // ── Background grid (subtle, inside canvas) ───────────────────────────────
+    function drawGrid() {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,.03)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < CW; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke();
+        }
+        for (let y = 0; y < CH; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // ── Collision: bullet vs blocks ───────────────────────────────────────────
+    function checkBulletBlockCollisions() {
+        for (let bi = bullets.length - 1; bi >= 0; bi--) {
+            const b = bullets[bi];
+            let hit = false;
+
+            for (let r = 0; r < blocks.length && !hit; r++) {
+                if (!blocks[r]) continue;
+                for (let c = 0; c < COLS && !hit; c++) {
+                    const blk = blocks[r][c];
+                    if (!blk || !blk.alive) continue;
+
+                    const bx = c * BW + 2;
+                    const by = rowY(r) + 1;
+                    const bw = BW - 4;
+                    const bh = BH - 2;
+
+                    if (b.x >= bx && b.x <= bx + bw &&
+                        b.y - BULLET_R <= by + bh && b.y + BULLET_R >= by) {
+
+                        blk.alive = false;
+                        bullets.splice(bi, 1);
+                        hit = true;
+
+                        const cx = bx + bw / 2;
+                        const cy = by + bh / 2;
+                        const [c1, c2] = BLOCK_GRADIENTS[blk.gradIdx];
+                        spawnParticles(cx, cy, c1, c2, 16);
+                        spawnFloater(cx, cy - 10, '+1');
+                        updateScore(score + 1);
+
+                        playSound('hit');
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Check if any block touched the player or ground ───────────────────────
+    function checkBlockReachedDanger() {
+        for (let r = 0; r < blocks.length; r++) {
+            if (!blocks[r]) continue;
+            for (let c = 0; c < COLS; c++) {
+                const blk = blocks[r][c];
+                if (!blk || !blk.alive) continue;
+
+                const bottom = rowY(r) + BH;
+
+                // Reached ground (below GROUND_Y)
+                if (bottom >= GROUND_Y) {
+                    return 'ground';
+                }
+
+                // Overlaps player
+                const bx = c * BW + 2;
+                const bw = BW - 4;
+                const px = player.x;
+                const pw = PLAYER_W;
+                const py = player.y;
+                const ph = PLAYER_H;
+
+                if (bx < px + pw && bx + bw > px &&
+                    bottom > py && rowY(r) < py + ph) {
+                    return 'player';
+                }
+            }
+        }
+        return null;
+    }
+
+    // ── Score / UI helpers ────────────────────────────────────────────────────
+    function updateScore(val) {
+        score = val;
+        scoreValEl.innerText = score;
+        if (score > hiScore) {
+            hiScore = score;
+            hiScoreValEl.innerText = hiScore;
+            localStorage.setItem('destroyer_hiscore', hiScore);
+        }
+    }
+
+    function updateLives(val) {
+        lives = val;
+        const hearts = ['', '❤️', '❤️❤️', '❤️❤️❤️'];
+        livesValEl.innerText = val > 0 ? (hearts[val] || `×${val}`) : '💀';
+    }
+
+    function updateLevel(val) {
+        level = val;
+        levelValEl.innerText = level;
+    }
+
+    // ── Game Over ─────────────────────────────────────────────────────────────
+    function triggerGameOver(reason) {
+        gameRunning = false;
+        playSound('gameover');
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+
+        deathReason.innerText = reason === 'player'
+            ? 'A block crashed into your ship!'
+            : 'Blocks reached the ground!';
+
+        finalScorePill.innerText = 'Score: ' + score;
+        newHiNotice.style.display = (score > 0 && score === hiScore) ? 'block' : 'none';
+        gameOverModal.style.display = 'flex';
+    }
+
+    // ── Level clear — when all blocks are destroyed ───────────────────────────
+    function checkLevelClear() {
+        if (aliveCount() === 0) {
+            playSound('levelup');
+            updateLevel(level + 1);
+            advanceInterval = Math.max(MIN_ADVANCE_INTERVAL, advanceInterval * 0.85);
+            updateFallSpeedLabel();
+            buildBlocks();
+            advanceTimer = 0;
+            // brief flash: all bullets cleared
+            bullets = [];
+        }
+    }
+
+    // ── Main game reset ───────────────────────────────────────────────────────
+    function resetGame() {
+        gameOverModal.style.display  = 'none';
+        pauseModal.style.display     = 'none';
+        startModal.style.display     = 'none';
+        isPaused    = false;
+        pauseBtn.innerText = '⏸ Pause';
+
+        score       = 0;
+        updateScore(0);
+        updateLives(3);
+        updateLevel(1);
+        advanceInterval = startingAdvanceInterval;
+        updateFallSpeedLabel();
+        advanceTimer = 0;
+        bullets  = [];
+        particles= [];
+        floaters = [];
+        fireHeld = false;
+        fireCooldown = 0;
+
+        player.x = CW / 2 - PLAYER_W / 2;
+        player.y = GROUND_Y;
+
+        buildBlocks();
+        gameRunning = true;
+        lastTime    = performance.now();
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(loop);
+    }
+
+    // ── Main loop ─────────────────────────────────────────────────────────────
+    function loop(timestamp) {
+        if (!gameRunning) return;
+
+        const dt = Math.min(timestamp - lastTime, 80); // cap to avoid huge jumps
+        lastTime = timestamp;
+
+        if (!isPaused) {
+            update(dt);
+        }
+        draw();
+
+        rafId = requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+        // ── Player movement ──
+        if (keys.left)  player.x = Math.max(0, player.x - PLAYER_SPEED);
+        if (keys.right) player.x = Math.min(CW - PLAYER_W, player.x + PLAYER_SPEED);
+
+        // ── Fire cooldown ──
+        if (fireCooldown > 0) fireCooldown = Math.max(0, fireCooldown - dt);
+
+        // ── Auto-fire while Space/fire held (with cooldown) ──
+        if (keys.fire && fireCooldown === 0) {
+            fireBullet();
+        }
+
+        // ── Bullet movement ──
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            bullets[i].y -= BULLET_SPEED;
+            if (bullets[i].y < -BULLET_R) bullets.splice(i, 1);
+        }
+
+        // ── Block advance timer ──
+        advanceTimer += dt;
+        if (advanceTimer >= advanceInterval) {
+            advanceTimer = 0;
+            advanceBlocks();
+        }
+
+        // ── Collisions ──
+        checkBulletBlockCollisions();
+
+        const danger = checkBlockReachedDanger();
+        if (danger) {
+            triggerGameOver(danger);
+            return;
+        }
+
+        // ── Level clear ──
+        checkLevelClear();
+    }
+
+    function draw() {
+        // Clear
+        ctx.clearRect(0, 0, CW, CH);
+
+        // Background grid
+        drawGrid();
+
+        // Danger line
+        drawGround();
+
+        // Blocks
+        for (let r = 0; r < blocks.length; r++) {
+            if (!blocks[r]) continue;
+            for (let c = 0; c < COLS; c++) {
+                const blk = blocks[r][c];
+                if (blk && blk.alive) drawBlock(r, c, blk);
+            }
+        }
+
+        // Bullets
+        for (const b of bullets) drawBullet(b);
+
+        // Player
+        drawPlayer();
+
+        // FX
+        updateParticles();
+        updateFloaters();
+
+        // Advance timer progress bar (bottom of canvas)
+        drawAdvanceBar();
+    }
+
+    // ── Advance timer indicator ───────────────────────────────────────────────
+    function drawAdvanceBar() {
+        const progress = advanceTimer / advanceInterval;
+        const barH = 4;
+        const y = CH - barH;
+
+        // Background
+        ctx.fillStyle = 'rgba(255,255,255,.06)';
+        ctx.fillRect(0, y, CW, barH);
+
+        // Fill — colour shifts red as it nears the step
+        const hue = Math.round(180 - progress * 180); // cyan → red
+        ctx.fillStyle = `hsl(${hue}, 85%, 55%)`;
+        ctx.fillRect(0, y, CW * progress, barH);
+    }
+
+    // ── Keyboard handling ─────────────────────────────────────────────────────
+    window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        if (key === 'a' || key === 'arrowleft')  { keys.left  = true; e.preventDefault(); }
+        if (key === 'd' || key === 'arrowright') { keys.right = true; e.preventDefault(); }
+        if (key === ' '  || e.code === 'Space')  { keys.fire  = true; e.preventDefault(); }
+        if (key === 'p') { togglePause(); e.preventDefault(); }
+        if (key === 'm') { toggleSound(); e.preventDefault(); }
+        if (key === '+' || key === '=') { adjustFallSpeed(1); e.preventDefault(); }
+        if (key === '-' || key === '_') { adjustFallSpeed(-1); e.preventDefault(); }
+        if (key === 'r') {
+            if (gameOverModal.style.display === 'flex' || !gameRunning) resetGame();
+            e.preventDefault();
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        const key = e.key.toLowerCase();
+        if (key === 'a' || key === 'arrowleft')  keys.left  = false;
+        if (key === 'd' || key === 'arrowright') keys.right = false;
+        if (key === ' '  || e.code === 'Space')  keys.fire  = false;
+    });
+
+    // ── Pause / sound toggles ─────────────────────────────────────────────────
+    function togglePause() {
+        if (!gameRunning) return;
+        isPaused = !isPaused;
+        if (isPaused) {
+            pauseModal.style.display = 'flex';
+            pauseBtn.innerText = '▶ Resume';
+        } else {
+            pauseModal.style.display = 'none';
+            pauseBtn.innerText = '⏸ Pause';
+            lastTime = performance.now(); // reset dt so we don't jump
+        }
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        soundBtn.innerText = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+    }
+
+    pauseBtn.addEventListener('click', togglePause);
+    resumeBtn.addEventListener('click', togglePause);
+    soundBtn.addEventListener('click', toggleSound);
+    startBtn.addEventListener('click', resetGame);
+    restartBtn.addEventListener('click', resetGame);
+
+    // ── Mobile D-pad ──────────────────────────────────────────────────────────
+    function holdBtn(el, keyName, onPress) {
+        el.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            el.classList.add('pressed');
+            keys[keyName] = true;
+            if (onPress) onPress();
+        }, { passive: false });
+        el.addEventListener('touchend', () => {
+            el.classList.remove('pressed');
+            keys[keyName] = false;
+        });
+        el.addEventListener('mousedown', () => {
+            el.classList.add('pressed');
+            keys[keyName] = true;
+            if (onPress) onPress();
+        });
+        el.addEventListener('mouseup',   () => { el.classList.remove('pressed'); keys[keyName] = false; });
+        el.addEventListener('mouseleave',() => { el.classList.remove('pressed'); keys[keyName] = false; });
+    }
+
+    holdBtn(dpadLeft,  'left');
+    holdBtn(dpadRight, 'right');
+    holdBtn(dpadFire,  'fire');
+
+    // ── Responsive scaling ────────────────────────────────────────────────────
+    const GAME_W = 806;
+    function applyScale() {
+        const availW = Math.min(window.innerWidth, window.screen.width);
+        const scale  = Math.min(1, availW / GAME_W);
+        gameWrapper.style.transform = `scale(${scale})`;
+        const naturalH = gameWrapper.offsetHeight;
+        gameWrapper.style.marginBottom = (Math.round(naturalH * scale) - naturalH) + 'px';
+    }
+    applyScale();
+    window.addEventListener('resize', applyScale);
+
+    // ── Show start modal on load ──────────────────────────────────────────────
+    updateFallSpeedLabel();
+    startModal.style.display = 'flex';
+
+    </script>
+</body>
+</html>
