@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Obstacle Course – Arcade Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --panel-bg: rgba(22, 30, 49, .75);
+            --panel-border: rgba(56, 189, 248, .2);
+            --accent-cyan: #38bdf8;
+            --accent-indigo: #6366f1;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            min-height: 100vh;
+            padding: 24px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            color: #f8fafc;
+            font-family: Outfit, system-ui, sans-serif;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(99,102,241,.15), transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(56,189,248,.12), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(16,185,129,.08), transparent 60%),
+                var(--bg-base);
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, rgba(255,255,255,.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,.02) 1px, transparent 1px);
+        }
+        .game-wrapper {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 806px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .brand-header, .hud-bar, .controls-strip { width: 100%; }
+        .brand-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .title-group { display: flex; align-items: baseline; gap: 12px; }
+        h1 {
+            font-size: clamp(1.55rem, 6vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -.03em;
+            background: linear-gradient(135deg, #38bdf8, #818cf8 55%, #c084fc);
+            color: transparent;
+            background-clip: text;
+            -webkit-background-clip: text;
+        }
+        .title-badge {
+            padding: 3px 8px;
+            border: 1px solid rgba(56,189,248,.3);
+            border-radius: 999px;
+            background: rgba(56,189,248,.12);
+            color: var(--accent-cyan);
+            font: 700 .68rem "JetBrains Mono", monospace;
+            letter-spacing: .08em;
+            white-space: nowrap;
+        }
+        .hud-group { display: flex; align-items: center; gap: 8px; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 11px;
+            border: 1px solid rgba(148,163,184,.2);
+            border-radius: 8px;
+            background: rgba(30,41,59,.8);
+            color: #e2e8f0;
+            font: 600 .82rem Outfit, sans-serif;
+            cursor: pointer;
+        }
+        .btn:hover { border-color: rgba(56,189,248,.5); color: var(--accent-cyan); }
+        .hud-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 9px 12px;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            background: var(--panel-bg);
+            box-shadow: 0 8px 24px -6px rgba(0,0,0,.5);
+        }
+        .stat-group { display: flex; gap: 8px; }
+        .stat-card {
+            min-width: 82px;
+            padding: 5px 10px;
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 7px;
+            background: rgba(15,23,42,.6);
+        }
+        .stat-label { display: block; color: #94a3b8; font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .stat-value { color: #f8fafc; font: 700 1.05rem "JetBrains Mono", monospace; white-space: nowrap; }
+        #scoreVal { color: var(--accent-rose); }
+        #hiScoreVal { color: var(--accent-amber); }
+        #speedVal { color: var(--accent-emerald); }
+        .controls-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            margin: 0 0 8px;
+            padding: 0 4px;
+            color: #94a3b8;
+            font-size: .76rem;
+        }
+        kbd {
+            padding: 2px 5px;
+            border: 1px solid #475569;
+            border-bottom-width: 2px;
+            border-radius: 4px;
+            background: #1e293b;
+            color: #e2e8f0;
+            font: 700 .68rem "JetBrains Mono", monospace;
+        }
+        .canvas-wrap { position: relative; width: 100%; line-height: 0; }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 3px solid rgba(56,189,248,.65);
+            border-radius: 12px;
+            background: #0f1629;
+            box-shadow: 0 0 0 1px rgba(56,189,248,.18), 0 20px 40px -10px rgba(0,0,0,.7), 0 0 35px -10px rgba(56,189,248,.2);
+            cursor: none;
+            touch-action: none;
+        }
+        .modal-overlay {
+            position: absolute;
+            inset: 3px;
+            z-index: 2;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 20px;
+            border-radius: 9px;
+            background: rgba(10,15,29,.9);
+            text-align: center;
+            line-height: 1.4;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-title { font-size: clamp(2rem, 8vw, 2.8rem); font-weight: 800; }
+        .modal-title.start { color: var(--accent-cyan); }
+        .modal-title.pause { color: var(--accent-amber); }
+        .modal-title.over { color: var(--accent-rose); }
+        .modal-body { max-width: 480px; color: #cbd5e1; font-size: 1rem; }
+        .modal-body p + p { margin-top: 8px; color: #94a3b8; font-size: .9rem; }
+        .btn-large {
+            padding: 11px 25px;
+            border: 0;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #38bdf8, #4f46e5);
+            box-shadow: 0 4px 14px rgba(56,189,248,.3);
+            color: white;
+            font: 700 1rem Outfit, sans-serif;
+            cursor: pointer;
+        }
+        .btn-large:hover { filter: brightness(1.15); transform: translateY(-1px); }
+        .dpad-container { display: none; justify-content: center; gap: 10px; width: 100%; margin-top: 12px; touch-action: none; }
+        .dpad-btn {
+            width: 70px;
+            height: 58px;
+            border: 1px solid rgba(56,189,248,.4);
+            border-radius: 10px;
+            background: rgba(30,41,59,.9);
+            color: #e2e8f0;
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+        .dpad-btn.pressed { background: rgba(56,189,248,.25); }
+        @media (pointer: coarse), (max-width: 700px) { .dpad-container { display: flex; } }
+        @media (max-width: 520px) {
+            body { padding: 14px 9px; }
+            .title-badge { display: none; }
+            .brand-header { align-items: flex-start; }
+            .hud-bar { padding: 7px; }
+            .stat-group { gap: 5px; }
+            .stat-card { min-width: 0; padding: 4px 7px; }
+            .stat-value { font-size: .9rem; }
+            .controls-strip { display: none; }
+            .btn { padding: 7px; font-size: .72rem; }
+        }
+    </style>
+</head>
+<body>
+    <main class="game-wrapper">
+        <header class="brand-header">
+            <div class="title-group">
+                <h1>Obstacle Course</h1>
+                <span class="title-badge">ARCADE EDITION</span>
+            </div>
+            <div class="hud-group">
+                <button class="btn" id="soundBtn" type="button" title="Toggle sound (M)">🔊 Sound: ON</button>
+                <button class="btn" id="pauseBtn" type="button" title="Pause (P)">⏸ Pause</button>
+            </div>
+        </header>
+
+        <section class="hud-bar" aria-label="Game status">
+            <div class="stat-group">
+                <div class="stat-card"><span class="stat-label">Survival</span><span class="stat-value" id="scoreVal">0 s</span></div>
+                <div class="stat-card"><span class="stat-label">Best</span><span class="stat-value" id="hiScoreVal">0 s</span></div>
+            </div>
+            <div class="stat-group">
+                <div class="stat-card"><span class="stat-label">Fall Speed</span><span class="stat-value" id="speedVal">90 px/s</span></div>
+                <div class="stat-card"><span class="stat-label">Waves</span><span class="stat-value" id="waveVal">0</span></div>
+            </div>
+        </section>
+
+        <div class="controls-strip">
+            <span><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> Move (hold to accelerate, up to 2.5×)</span>
+            <span><kbd>+</kbd>/<kbd>−</kbd> Fall speed</span>
+            <span><kbd>P</kbd> Pause</span>
+            <span><kbd>M</kbd> Mute</span>
+            <span><kbd>R</kbd> Restart</span>
+        </div>
+
+        <div class="canvas-wrap">
+            <canvas id="gameCanvas" width="800" height="600" aria-label="Obstacle Course playfield"></canvas>
+            <div class="modal-overlay visible" id="startModal">
+                <h2 class="modal-title start">OBSTACLE COURSE</h2>
+                <div class="modal-body">
+                    <p>Dodge the falling blocks and survive as long as you can.</p>
+                    <p>A random wave arrives every 1.5 seconds. Falling speed increases every 5 waves; use + / − to adjust it.</p>
+                </div>
+                <button class="btn-large" id="startBtn" type="button">Start Game</button>
+            </div>
+            <div class="modal-overlay" id="pauseModal">
+                <h2 class="modal-title pause">PAUSED</h2>
+                <div class="modal-body"><p>Press P or click Resume to continue.</p></div>
+                <button class="btn-large" id="resumeBtn" type="button">Resume</button>
+            </div>
+            <div class="modal-overlay" id="gameOverModal">
+                <h2 class="modal-title over">GAME OVER</h2>
+                <div class="modal-body">
+                    <div class="score-pill" id="finalScore">Survived: 0 s</div>
+                    <p>A falling block hit you.</p>
+                </div>
+                <button class="btn-large" id="restartBtn" type="button">Play Again (R)</button>
+            </div>
+        </div>
+
+        <div class="dpad-container" aria-label="Touch movement controls">
+            <button class="dpad-btn" id="dpadLeft" type="button" aria-label="Move left">◀</button>
+            <button class="dpad-btn" id="dpadRight" type="button" aria-label="Move right">▶</button>
+        </div>
+    </main>
+
+    <script>
+    (() => {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreValEl = document.getElementById('scoreVal');
+        const hiScoreValEl = document.getElementById('hiScoreVal');
+        const speedValEl = document.getElementById('speedVal');
+        const waveValEl = document.getElementById('waveVal');
+        const soundBtn = document.getElementById('soundBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const startModal = document.getElementById('startModal');
+        const pauseModal = document.getElementById('pauseModal');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const finalScore = document.getElementById('finalScore');
+
+        const CW = canvas.width;
+        const CH = canvas.height;
+        const COLS = 16;
+        const BLOCK_W = 46;
+        const BLOCK_H = 32;
+        const COL_GAP = (CW - COLS * BLOCK_W) / (COLS - 1);
+        const TOP_Y = 12;
+        const PLAYER_W = 30;
+        const PLAYER_H = 22;
+        const PLAYER_Y = CH - 60;
+        const PLAYER_SPEED = 300;
+        const MAX_PLAYER_SPEED_MULTIPLIER = 2.5;
+        const PLAYER_ACCELERATION_RATE = 1.5;
+        const WAVE_INTERVAL = 1500;
+        const MIN_FALL_SPEED = 10;
+        const MAX_FALL_SPEED = 500;
+        const SPEED_STEP = 10;
+        const INITIAL_FALL_SPEED = 90;
+        const SPEED_INCREASE_EVERY = 5;
+        const SPEED_INCREASE = 10;
+        const BLOCK_GRADIENTS = [
+            ['#38bdf8', '#0284c7'], ['#f43f5e', '#be123c'], ['#10b981', '#047857'],
+            ['#8b5cf6', '#6d28d9'], ['#f59e0b', '#d97706'], ['#ec4899', '#be185d'],
+            ['#84cc16', '#4d7c0f'], ['#f97316', '#c2410c'], ['#14b8a6', '#0f766e'],
+            ['#a855f7', '#7e22ce'], ['#06b6d4', '#0e7490'], ['#e11d48', '#9f1239'],
+            ['#6366f1', '#4338ca']
+        ];
+
+        const keys = { left: false, right: false };
+        let blocks = [];
+        let particles = [];
+        let player = { x: CW / 2 - PLAYER_W / 2 };
+        let moveDirection = 0;
+        let moveHoldDuration = 0;
+        let survivalTime = 0;
+        let highScore = Number.parseInt(localStorage.getItem('obstacle_course_hiscore') || '0', 10);
+        let fallSpeed = INITIAL_FALL_SPEED;
+        let waveCount = 0;
+        let waveTimer = 0;
+        let gameRunning = false;
+        let isPaused = false;
+        let soundEnabled = true;
+        let lastTime = 0;
+        let rafId = null;
+        let audioCtx = null;
+
+        hiScoreValEl.textContent = `${highScore} s`;
+
+        function updateSpeedDisplay() {
+            speedValEl.textContent = `${Math.round(fallSpeed)} px/s`;
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            const AudioClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioClass) return;
+            audioCtx ??= new AudioClass();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            const oscillator = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            oscillator.connect(gain);
+            gain.connect(audioCtx.destination);
+            if (type === 'spawn') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, now);
+                oscillator.frequency.exponentialRampToValueAtTime(220, now + .1);
+                gain.gain.setValueAtTime(.1, now);
+                gain.gain.exponentialRampToValueAtTime(.001, now + .12);
+                oscillator.start(now);
+                oscillator.stop(now + .12);
+            } else if (type === 'gameover') {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(240, now);
+                oscillator.frequency.exponentialRampToValueAtTime(60, now + .55);
+                gain.gain.setValueAtTime(.25, now);
+                gain.gain.exponentialRampToValueAtTime(.001, now + .55);
+                oscillator.start(now);
+                oscillator.stop(now + .55);
+            }
+        }
+
+        function spawnWave() {
+            waveCount += 1;
+            waveValEl.textContent = waveCount;
+            const occupiedTopColumns = new Set(
+                blocks.filter(block => block.y < TOP_Y + BLOCK_H + 8).map(block => block.col)
+            );
+            const available = Array.from({ length: COLS }, (_, col) => col)
+                .filter(col => !occupiedTopColumns.has(col));
+            const widthPercent = 20 + Math.random() * 50;
+            const desiredCount = Math.max(
+                4,
+                Math.min(11, Math.ceil((widthPercent / 100 * CW + COL_GAP) / (BLOCK_W + COL_GAP)))
+            );
+            for (let i = available.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [available[i], available[j]] = [available[j], available[i]];
+            }
+            const count = Math.min(desiredCount, available.length);
+            for (let i = 0; i < count; i++) {
+                const col = available[i];
+                blocks.push({
+                    col,
+                    x: col * (BLOCK_W + COL_GAP),
+                    y: TOP_Y,
+                    w: BLOCK_W,
+                    h: BLOCK_H,
+                    gradIdx: Math.floor(Math.random() * BLOCK_GRADIENTS.length)
+                });
+            }
+            playSound('spawn');
+            if (waveCount % SPEED_INCREASE_EVERY === 0) {
+                fallSpeed = Math.min(MAX_FALL_SPEED, fallSpeed + SPEED_INCREASE);
+                updateSpeedDisplay();
+            }
+        }
+
+        function spawnParticles(x, y, gradIdx) {
+            const colors = BLOCK_GRADIENTS[gradIdx];
+            for (let i = 0; i < 12; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 40 + Math.random() * 100;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: .3 + Math.random() * .25,
+                    maxLife: .55,
+                    color: Math.random() < .5 ? colors[0] : colors[1]
+                });
+            }
+        }
+
+        function finishGame() {
+            gameRunning = false;
+            if (rafId !== null) cancelAnimationFrame(rafId);
+            rafId = null;
+            finalScore.textContent = `Survived: ${Math.floor(survivalTime)} s`;
+            gameOverModal.classList.add('visible');
+            pauseModal.classList.remove('visible');
+            playSound('gameover');
+        }
+
+        function resetGame() {
+            if (rafId !== null) cancelAnimationFrame(rafId);
+            blocks = [];
+            particles = [];
+            player.x = CW / 2 - PLAYER_W / 2;
+            moveDirection = 0;
+            moveHoldDuration = 0;
+            survivalTime = 0;
+            fallSpeed = INITIAL_FALL_SPEED;
+            waveCount = 0;
+            waveTimer = 0;
+            waveValEl.textContent = '0';
+            scoreValEl.textContent = '0 s';
+            updateSpeedDisplay();
+            keys.left = false;
+            keys.right = false;
+            gameRunning = true;
+            isPaused = false;
+            pauseBtn.textContent = '⏸ Pause';
+            startModal.classList.remove('visible');
+            pauseModal.classList.remove('visible');
+            gameOverModal.classList.remove('visible');
+            spawnWave();
+            lastTime = performance.now();
+            rafId = requestAnimationFrame(loop);
+        }
+
+        function update(dt) {
+            const direction = Number(keys.right) - Number(keys.left);
+            if (direction === 0) {
+                moveDirection = 0;
+                moveHoldDuration = 0;
+            } else {
+                if (direction !== moveDirection) moveHoldDuration = 0;
+                moveDirection = direction;
+                moveHoldDuration += dt;
+            }
+            const speedMultiplier = Math.min(
+                MAX_PLAYER_SPEED_MULTIPLIER,
+                1 + moveHoldDuration * PLAYER_ACCELERATION_RATE
+            );
+            player.x = Math.max(
+                0,
+                Math.min(CW - PLAYER_W, player.x + direction * PLAYER_SPEED * speedMultiplier * dt)
+            );
+
+            survivalTime += dt;
+            const shownScore = Math.floor(survivalTime);
+            scoreValEl.textContent = `${shownScore} s`;
+            if (shownScore > highScore) {
+                highScore = shownScore;
+                hiScoreValEl.textContent = `${highScore} s`;
+                localStorage.setItem('obstacle_course_hiscore', String(highScore));
+            }
+
+            waveTimer += dt * 1000;
+            while (waveTimer >= WAVE_INTERVAL) {
+                waveTimer -= WAVE_INTERVAL;
+                spawnWave();
+            }
+
+            for (const block of blocks) block.y += fallSpeed * dt;
+
+            for (let i = blocks.length - 1; i >= 0; i--) {
+                const block = blocks[i];
+                if (block.x < player.x + PLAYER_W &&
+                    block.x + block.w > player.x &&
+                    block.y < PLAYER_Y + PLAYER_H &&
+                    block.y + block.h > PLAYER_Y) {
+                    finishGame();
+                    return;
+                }
+                if (block.y >= CH) {
+                    blocks.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.x += particle.vx * dt;
+                particle.y += particle.vy * dt;
+                particle.vx *= .96;
+                particle.vy *= .96;
+                particle.life -= dt;
+                if (particle.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,.03)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < CW; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke();
+            }
+            for (let y = 0; y < CH; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawBlock(block) {
+            const x = block.x + 2;
+            const y = block.y + 1;
+            const w = block.w - 4;
+            const h = block.h - 2;
+            const [light, dark] = BLOCK_GRADIENTS[block.gradIdx];
+            const gradient = ctx.createLinearGradient(x, y, x, y + h);
+            gradient.addColorStop(0, light);
+            gradient.addColorStop(1, dark);
+            ctx.save();
+            ctx.shadowColor = light;
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 6);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.restore();
+            ctx.beginPath();
+            ctx.roundRect(x + 4, y + 4, w - 8, h / 2 - 4, [4, 4, 0, 0]);
+            ctx.fillStyle = 'rgba(255,255,255,.2)';
+            ctx.fill();
+        }
+
+        function drawPlayer() {
+            const x = player.x;
+            const y = PLAYER_Y;
+            const gradient = ctx.createLinearGradient(x, y, x, y + PLAYER_H);
+            gradient.addColorStop(0, '#7dd3fc');
+            gradient.addColorStop(1, '#0369a1');
+            ctx.save();
+            ctx.shadowColor = '#38bdf8';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.roundRect(x, y + 5, PLAYER_W, PLAYER_H - 5, [4, 4, 6, 6]);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(x + PLAYER_W / 2 - 2, y, 4, 7, [2, 2, 0, 0]);
+            ctx.fillStyle = '#bae6fd';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, CW, CH);
+            drawGrid();
+            ctx.save();
+            ctx.strokeStyle = 'rgba(56,189,248,.35)';
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(0, PLAYER_Y - 3);
+            ctx.lineTo(CW, PLAYER_Y - 3);
+            ctx.stroke();
+            ctx.restore();
+
+            for (const block of blocks) drawBlock(block);
+            for (const particle of particles) {
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, particle.life / particle.maxLife);
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            drawPlayer();
+
+            const progress = waveTimer / WAVE_INTERVAL;
+            ctx.fillStyle = 'rgba(255,255,255,.06)';
+            ctx.fillRect(0, CH - 4, CW, 4);
+            ctx.fillStyle = `hsl(${Math.round(180 - progress * 180)}, 85%, 55%)`;
+            ctx.fillRect(0, CH - 4, CW * progress, 4);
+        }
+
+        function loop(timestamp) {
+            if (!gameRunning || isPaused) return;
+            const dt = Math.min((timestamp - lastTime) / 1000, .05);
+            lastTime = timestamp;
+            update(dt);
+            draw();
+            if (gameRunning && !isPaused) rafId = requestAnimationFrame(loop);
+        }
+
+        function adjustSpeed(direction) {
+            fallSpeed = Math.max(MIN_FALL_SPEED, Math.min(MAX_FALL_SPEED, fallSpeed + direction * SPEED_STEP));
+            updateSpeedDisplay();
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            isPaused = !isPaused;
+            pauseModal.classList.toggle('visible', isPaused);
+            pauseBtn.textContent = isPaused ? '▶ Resume' : '⏸ Pause';
+            if (!isPaused) {
+                lastTime = performance.now();
+                rafId = requestAnimationFrame(loop);
+            }
+        }
+
+        window.addEventListener('keydown', event => {
+            const key = event.key.toLowerCase();
+            if (key === 'a' || key === 'arrowleft') { keys.left = true; event.preventDefault(); }
+            if (key === 'd' || key === 'arrowright') { keys.right = true; event.preventDefault(); }
+            if (key === 'p') { togglePause(); event.preventDefault(); }
+            if (key === 'm') {
+                soundEnabled = !soundEnabled;
+                soundBtn.textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+                event.preventDefault();
+            }
+            if (key === '+' || key === '=') { adjustSpeed(1); event.preventDefault(); }
+            if (key === '-' || key === '_') { adjustSpeed(-1); event.preventDefault(); }
+            if (key === 'r' && !gameRunning) { resetGame(); event.preventDefault(); }
+        });
+        window.addEventListener('keyup', event => {
+            const key = event.key.toLowerCase();
+            if (key === 'a' || key === 'arrowleft') keys.left = false;
+            if (key === 'd' || key === 'arrowright') keys.right = false;
+        });
+        window.addEventListener('blur', () => {
+            keys.left = false;
+            keys.right = false;
+        });
+
+        function bindHoldButton(button, key) {
+            const press = event => {
+                event.preventDefault();
+                keys[key] = true;
+                button.classList.add('pressed');
+            };
+            const release = () => {
+                keys[key] = false;
+                button.classList.remove('pressed');
+            };
+            button.addEventListener('pointerdown', press);
+            button.addEventListener('pointerup', release);
+            button.addEventListener('pointercancel', release);
+            button.addEventListener('pointerleave', release);
+        }
+        bindHoldButton(document.getElementById('dpadLeft'), 'left');
+        bindHoldButton(document.getElementById('dpadRight'), 'right');
+
+        document.getElementById('startBtn').addEventListener('click', resetGame);
+        document.getElementById('restartBtn').addEventListener('click', resetGame);
+        document.getElementById('resumeBtn').addEventListener('click', togglePause);
+        pauseBtn.addEventListener('click', togglePause);
+        soundBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundBtn.textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+        });
+
+        updateSpeedDisplay();
+        draw();
+    })();
+    </script>
+</body>
+</html>
