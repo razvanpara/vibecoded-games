@@ -51,10 +51,15 @@
     .secondary{border-color:#ffffff22;background:#ffffff0b;color:var(--text)}
     .primary:hover,.secondary:hover{filter:brightness(1.08)}
     .touch-controls{display:none;justify-content:space-between;align-items:center;gap:18px;padding:12px 4px 0;user-select:none;-webkit-user-select:none}
-    .pad{display:grid;grid-template:repeat(3,48px)/repeat(3,48px);gap:4px}
     .touch-btn{display:grid;place-items:center;min-width:48px;min-height:48px;border:1px solid #ffffff23;border-radius:14px;background:linear-gradient(145deg,#1b2938,#101925);color:#eef5fa;box-shadow:0 5px 16px #0005;touch-action:none;-webkit-tap-highlight-color:transparent}
     .touch-btn:active,.touch-btn.active{border-color:#6ee7b7a0;background:#164333;color:#b7f7db}
-    .pad .up{grid-area:1/2}.pad .left{grid-area:2/1}.pad .down{grid-area:2/2}.pad .right{grid-area:2/3}
+    .joystick{position:relative;width:142px;height:142px;flex:0 0 142px;border:1px solid #ffffff30;border-radius:50%;background:radial-gradient(circle at 35% 30%,#263b49,#101923 72%);box-shadow:inset 0 2px 14px #0008,0 5px 20px #0006;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+    .joystick::before,.joystick::after{position:absolute;inset:50%;background:#ffffff14;content:"";pointer-events:none}
+    .joystick::before{width:1px;height:76%;transform:translate(-50%,-50%)}
+    .joystick::after{width:76%;height:1px;transform:translate(-50%,-50%)}
+    .joystick-stick{position:absolute;top:50%;left:50%;display:grid;width:58px;height:58px;place-items:center;border:1px solid #a7f3d088;border-radius:50%;background:radial-gradient(circle at 35% 30%,#79edc3,#276d59 75%);box-shadow:0 4px 13px #0008,0 0 16px #34d39925;transform:translate(calc(-50% + var(--stick-x,0px)),calc(-50% + var(--stick-y,0px)));pointer-events:none}
+    .joystick-stick::after{width:12px;height:12px;border:2px solid #eafff5a8;border-radius:50%;content:""}
+    .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;clip-path:inset(50%)}
     .actions-touch{display:flex;gap:10px;align-items:center}
     .actions-touch .touch-btn{min-width:62px;min-height:62px;border-radius:50%;font-size:.72rem;font-weight:700}
     .below{margin:12px 3px 0;color:#8493a7;font-size:.75rem;line-height:1.5}
@@ -77,8 +82,9 @@
       .minimap-opacity{gap:3px;margin-top:3px;font-size:.43rem}
       .minimap-opacity output{min-width:21px}
       .touch-controls{display:flex}
-      .pad{grid-template:repeat(3,43px)/repeat(3,43px);gap:3px}
       .touch-btn{min-width:43px;min-height:43px;border-radius:12px}
+      .joystick{width:126px;height:126px;flex-basis:126px}
+      .joystick-stick{width:54px;height:54px}
       .actions-touch{gap:7px}
       .actions-touch .touch-btn{min-width:55px;min-height:55px;font-size:.65rem}
       .below{margin-top:8px}
@@ -133,12 +139,13 @@
     </section>
   </section>
   <div class="touch-controls" aria-label="Touch controls">
-    <div class="pad" aria-label="Direction pad">
-      <button class="touch-btn up" data-dir="up" aria-label="Move up">▲</button><button class="touch-btn left" data-dir="left" aria-label="Move left">◀</button><button class="touch-btn down" data-dir="down" aria-label="Move down">▼</button><button class="touch-btn right" data-dir="right" aria-label="Move right">▶</button>
+    <div id="joystick" class="joystick" role="application" aria-label="Movement joystick. Drag in one of eight directions to move the cat." aria-describedby="joystick-direction">
+      <span id="joystick-stick" class="joystick-stick"></span>
+      <span id="joystick-direction" class="visually-hidden" aria-live="polite">Neutral</span>
     </div>
     <div class="actions-touch"><button class="touch-btn" data-action="sprint" aria-label="Sprint">DASH</button><button class="touch-btn" data-action="jump" aria-label="Jump">JUMP</button></div>
   </div>
-  <p class="below">Desktop: WASD / arrows · hold Space to sprint · Shift / J to jump · Esc / P to pause. On mobile, the camera follows your cat through the garden.</p>
+  <p class="below">Desktop: WASD / arrows · hold Space to sprint · Shift / J to jump · Esc / P to pause. On mobile, drag the joystick to move in eight directions; use Dash and Jump separately.</p>
   <footer><span>ARCADE LAB</span><span>GARDEN DASH · KEEP YOUR PAWS QUICK</span></footer>
 </main>
 <script>
@@ -157,6 +164,15 @@
   const world = {w:C.cols*C.tile,h:C.rows*C.tile};
   const minimap=document.querySelector("#minimap"),mapCtx=minimap.getContext("2d");
   const minimapPanel=document.querySelector(".minimap"),minimapOpacity=document.querySelector("#minimap-opacity"),minimapOpacityValue=document.querySelector("#minimap-opacity-value");
+  const joystick=document.querySelector("#joystick"),joystickStick=document.querySelector("#joystick-stick"),joystickDirection=document.querySelector("#joystick-direction");
+  const joystickSectors=[
+    {label:"E",directions:["right"]},{label:"SE",directions:["right","down"]},
+    {label:"S",directions:["down"]},{label:"SW",directions:["down","left"]},
+    {label:"W",directions:["left"]},{label:"NW",directions:["left","up"]},
+    {label:"N",directions:["up"]},{label:"NE",directions:["up","right"]}
+  ];
+  const joystickDirections=["up","down","left","right"];
+  let joystickPointerId=null;
   let grid, walls, fences, bushes, mice, dogs, cat, level=1, levelMice=C.mice, levelDogs=C.dogs, mode="start", elapsed=0, last=0, camera={x:0,y:0}, dpr=1, view={w:960,h:600};
   let grass=[];
   const rand=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -219,6 +235,29 @@
     minimapOpacityValue.value=`${opacity}%`;
     minimapOpacityValue.textContent=`${opacity}%`;
     minimapOpacity.setAttribute("aria-valuetext",`${opacity}% opacity`);
+  }
+  function updateJoystick(e){
+    const rect=joystick.getBoundingClientRect(),radius=Math.min(rect.width,rect.height)/2;
+    const dx=e.clientX-(rect.left+rect.width/2),dy=e.clientY-(rect.top+rect.height/2);
+    const distance=Math.hypot(dx,dy),maxTravel=radius-joystickStick.offsetWidth/2-5;
+    const scale=distance>maxTravel?maxTravel/distance:1,x=dx*scale,y=dy*scale;
+    joystickStick.style.setProperty("--stick-x",`${x}px`);
+    joystickStick.style.setProperty("--stick-y",`${y}px`);
+    for(const direction of joystickDirections)touch.delete(direction);
+    if(distance<radius*.18){joystickDirection.textContent="Neutral";return;}
+    const angle=(Math.atan2(dy,dx)+Math.PI*2)%(Math.PI*2);
+    const sector=joystickSectors[Math.round(angle/(Math.PI/4))%8];
+    for(const direction of sector.directions)touch.add(direction);
+    joystickDirection.textContent=sector.label;
+  }
+  function stopJoystick(){
+    if(joystickPointerId!==null&&joystick.hasPointerCapture?.(joystickPointerId))joystick.releasePointerCapture(joystickPointerId);
+    joystickPointerId=null;
+    for(const direction of joystickDirections)touch.delete(direction);
+    joystick.classList.remove("active");
+    joystickStick.style.setProperty("--stick-x","0px");
+    joystickStick.style.setProperty("--stick-y","0px");
+    joystickDirection.textContent="Neutral";
   }
   function circleRect(x,y,r,o){const px=clamp(x,o.x,o.x+o.w),py=clamp(y,o.y,o.y+o.h);return(x-px)**2+(y-py)**2<r*r;}
   function blocked(x,y,r,entity,allowFence=false){
@@ -502,9 +541,28 @@
     if(k==="escape"||k==="p"){if(mode==="play"||mode==="pause")pause();}
   });
   document.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
-  window.addEventListener("blur",()=>{keys.clear();touch.clear();if(mode==="play")pause();});
-  document.querySelectorAll("[data-dir],[data-action]").forEach(button=>{
-    const id=button.dataset.dir||button.dataset.action;
+  window.addEventListener("blur",()=>{keys.clear();touch.clear();stopJoystick();if(mode==="play")pause();});
+  joystick.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    if(joystickPointerId!==null)return;
+    joystickPointerId=e.pointerId;
+    joystick.classList.add("active");
+    if(e.isTrusted)joystick.setPointerCapture(e.pointerId);
+    updateJoystick(e);
+  });
+  joystick.addEventListener("pointermove",e=>{
+    if(e.pointerId!==joystickPointerId)return;
+    e.preventDefault();
+    updateJoystick(e);
+  });
+  for(const eventName of["pointerup","pointercancel","lostpointercapture"]){
+    joystick.addEventListener(eventName,e=>{
+      if(joystickPointerId===null||e.pointerId===joystickPointerId)stopJoystick();
+    });
+  }
+  joystick.addEventListener("contextmenu",e=>e.preventDefault());
+  document.querySelectorAll("[data-action]").forEach(button=>{
+    const id=button.dataset.action;
     const down=e=>{e.preventDefault();touch.add(id);button.classList.add("active");if(e.isTrusted&&button.setPointerCapture)button.setPointerCapture(e.pointerId);if(id==="jump"&&mode==="play"&&cat.jump<=0)cat.jump=C.jumpTime;};
     const up=e=>{e.preventDefault();touch.delete(id);button.classList.remove("active");};
     button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
