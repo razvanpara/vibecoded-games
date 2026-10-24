@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#090d16">
+    <meta name="description" content="Catch the rain, fill your bucket, and deliver three loads in Rain Bucket Challenge.">
+    <title>Rain Bucket Challenge — Arcade Lab</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #090d16;
+            --panel: rgba(20, 28, 45, .88);
+            --line: rgba(103, 232, 249, .2);
+            --cyan: #67e8f9;
+            --blue: #38bdf8;
+            --green: #34d399;
+            --amber: #fbbf24;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            padding: max(18px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at 12% 10%, rgba(99,102,241,.16), transparent 38rem),
+                radial-gradient(ellipse at 88% 75%, rgba(56,189,248,.12), transparent 38rem),
+                var(--bg);
+            font-family: Outfit, "Segoe UI", system-ui, sans-serif;
+        }
+        button, a { font: inherit; }
+        button { color: inherit; }
+        .shell { width: min(1040px, 100%); margin: 0 auto; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; }
+        .brand-mark { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid rgba(103,232,249,.35); border-radius: 11px; background: rgba(56,189,248,.12); color: var(--cyan); font-size: 19px; }
+        .brand-name { font-size: .82rem; font-weight: 800; letter-spacing: .08em; }
+        .title-group { display: flex; min-width: 0; align-items: center; gap: 13px; }
+        .back-link { flex-shrink: 0; text-decoration: none; white-space: nowrap; }
+        .title-copy { min-width: 0; }
+        .heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+        h1 { margin: 0; font-size: clamp(1.45rem, 4vw, 2rem); font-weight: 800; letter-spacing: -.045em; }
+        .title-accent { color: var(--cyan); }
+        .eyebrow { color: #a5b4fc; font: 500 .68rem "DM Mono", Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; }
+        .header-actions { display: flex; gap: 8px; }
+        .button {
+            min-height: 40px; padding: 8px 12px; border: 1px solid rgba(148,163,184,.22); border-radius: 9px;
+            background: rgba(30,41,59,.84); color: #e2e8f0; cursor: pointer; font-size: .83rem; font-weight: 650;
+            transition: border-color .15s, background .15s, transform .15s;
+        }
+        .button:hover { transform: translateY(-1px); border-color: rgba(103,232,249,.5); background: rgba(30,41,59,1); }
+        .button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+        .hud {
+            display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; margin-bottom: 10px;
+        }
+        .stat {
+            min-width: 0; padding: 9px 12px; border: 1px solid rgba(148,163,184,.12); border-radius: 11px;
+            background: var(--panel); box-shadow: 0 8px 24px rgba(0,0,0,.16);
+        }
+        .stat-label { display: block; margin-bottom: 3px; color: var(--muted); font: 600 .62rem "DM Mono", Consolas, monospace; letter-spacing: .07em; text-transform: uppercase; }
+        .stat-value { display: block; overflow: hidden; color: #f8fafc; font: 700 1.08rem "DM Mono", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+        #timerValue { color: var(--amber); }
+        #deliveryValue { color: var(--green); }
+        #waterValue { color: var(--cyan); }
+        #weatherValue { color: #a5b4fc; font: 700 .91rem Outfit, sans-serif; }
+        .meter { height: 4px; margin-top: 6px; overflow: hidden; border-radius: 9px; background: rgba(148,163,184,.18); }
+        .meter-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #38bdf8, #34d399); transition: width .12s linear; }
+        .game-frame {
+            position: relative; overflow: hidden; width: 100%; border: 2px solid rgba(103,232,249,.46); border-radius: 15px;
+            background: #a5dcf2; box-shadow: 0 0 0 1px rgba(56,189,248,.14), 0 18px 44px rgba(0,0,0,.38), 0 0 30px rgba(56,189,248,.12);
+        }
+        canvas { display: block; width: 100%; height: auto; aspect-ratio: 960 / 560; }
+        .modal-overlay {
+            position: absolute; z-index: 2; inset: 0; display: flex; align-items: center; justify-content: center;
+            padding: 16px; background: rgba(7,13,27,.56); backdrop-filter: blur(5px);
+        }
+        .modal-overlay[hidden] { display: none; }
+        .modal {
+            width: min(440px, 100%); max-height: 100%; overflow: auto; padding: clamp(19px, 4vw, 29px);
+            border: 1px solid rgba(103,232,249,.3); border-radius: 17px;
+            background: linear-gradient(150deg, rgba(23,34,54,.98), rgba(11,18,32,.98));
+            text-align: center; box-shadow: 0 22px 60px rgba(0,0,0,.46);
+        }
+        .modal-icon { margin-bottom: 5px; font-size: 2rem; }
+        .modal h2 { margin: 4px 0 9px; font-size: clamp(1.55rem, 5vw, 2.05rem); letter-spacing: -.045em; }
+        .modal p { margin: 0 auto 17px; max-width: 370px; color: #b0bdce; font-size: .93rem; line-height: 1.55; }
+        .instructions { display: grid; gap: 8px; margin: 15px 0 19px; padding: 13px; border: 1px solid rgba(148,163,184,.12); border-radius: 11px; background: rgba(15,23,42,.65); color: #cbd5e1; font-size: .82rem; text-align: left; }
+        .instructions span { display: flex; align-items: baseline; gap: 9px; }
+        .instructions b { width: 19px; color: var(--cyan); text-align: center; }
+        .best-line { margin: 12px 0 18px; color: #fcd34d; font: 600 .8rem "DM Mono", Consolas, monospace; }
+        .primary {
+            min-height: 48px; width: 100%; padding: 11px 18px; border: 0; border-radius: 10px;
+            background: linear-gradient(135deg, #22d3ee, #0284c7); color: #082f49; cursor: pointer;
+            font-size: 1rem; font-weight: 800; box-shadow: 0 7px 22px rgba(56,189,248,.25);
+        }
+        .primary:hover { filter: brightness(1.09); }
+        .secondary { width: 100%; margin-top: 9px; }
+        .end-stats { display: flex; justify-content: center; gap: 10px; margin: 17px 0; }
+        .end-stat { flex: 1; padding: 11px 8px; border-radius: 10px; background: rgba(15,23,42,.75); }
+        .end-stat b { display: block; color: var(--cyan); font: 700 1.1rem "DM Mono", Consolas, monospace; }
+        .end-stat span { color: var(--muted); font-size: .68rem; text-transform: uppercase; }
+        .controls { display: flex; justify-content: center; gap: 14px; margin-top: 12px; touch-action: none; }
+        .move-button {
+            display: none; width: min(136px, 38vw); min-height: 62px; border: 1px solid rgba(103,232,249,.35); border-radius: 13px;
+            background: linear-gradient(155deg, rgba(30,41,59,.95), rgba(15,23,42,.96)); color: #e2e8f0;
+            font-size: 1.5rem; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none;
+        }
+        .move-button.pressed { transform: translateY(2px); border-color: var(--cyan); background: rgba(8,145,178,.42); }
+        .desktop-hint { margin: 10px 0 0; color: #8492a7; font-size: .76rem; text-align: center; }
+        kbd { padding: 2px 5px; border: 1px solid #475569; border-bottom-width: 2px; border-radius: 4px; background: #1e293b; color: #e2e8f0; font: 600 .7rem "DM Mono", Consolas, monospace; }
+        @media (pointer: coarse), (max-width: 700px) {
+            body {
+                min-height: 100svh;
+                padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+            }
+            .shell { display: flex; min-height: calc(100svh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom))); flex-direction: column; }
+            .topbar { display: none; }
+            .heading { margin-bottom: 10px; }
+            .hud { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 0; }
+            .stat { padding: 7px 9px; }
+            .stat-value { font-size: 1rem; }
+            .game-frame { flex-shrink: 0; margin: 0; }
+            .game-frame canvas {
+                height: clamp(140px, min(calc((100vw - 20px) * .875), calc(100svh - 460px)), 324px);
+                aspect-ratio: auto;
+            }
+            .controls { flex: 1 1 auto; min-height: 181px; width: 100%; gap: 8px; margin-top: 0; align-items: center; }
+            .move-button {
+                display: grid;
+                flex: 1 1 0;
+                width: auto;
+                min-height: 0;
+                aspect-ratio: 1;
+                place-items: center;
+                border-radius: 12px;
+                box-shadow: 0 8px 22px rgba(0,0,0,.24);
+            }
+            .modal { padding: 12px; }
+            .modal-icon { display: none; }
+            .modal .eyebrow { display: none; }
+            .modal h2 { margin: 2px 0 6px; font-size: 1.3rem; }
+            .modal p { margin-bottom: 10px; font-size: .8rem; line-height: 1.4; }
+            .instructions { display: none; }
+            .best-line { margin: 6px 0 9px; }
+            .primary { min-height: 40px; }
+            .end-stats { margin: 10px 0; }
+            .desktop-hint { display: none; }
+        }
+        @media (max-width: 420px) {
+            .heading { align-items: flex-start; }
+            .title-group { align-items: flex-start; gap: 8px; }
+            .heading { flex-wrap: wrap; }
+            .header-actions { width: 100%; justify-content: flex-start; }
+            .heading .eyebrow { font-size: .57rem; }
+            h1 { font-size: 1.35rem; }
+            .header-actions { gap: 5px; }
+            .header-actions .button { min-height: 38px; padding: 7px 9px; font-size: .75rem; }
+            .hud { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+            .stat-label { font-size: .56rem; }
+            .stat-value { font-size: .9rem; }
+            #weatherValue { font-size: .8rem; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <nav class="topbar" aria-label="Game navigation">
+        <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true">✳</span><span class="brand-name">ARCADE LAB</span></a>
+    </nav>
+    <header class="heading">
+        <div class="title-group">
+            <a class="button back-link" href="../index.html" aria-label="Back to game selection">← Games</a>
+            <div class="title-copy"><div class="eyebrow">A little rain, a lot to carry</div><h1>Rain Bucket <span class="title-accent">Challenge</span></h1></div>
+        </div>
+        <div class="header-actions">
+            <button class="button" id="soundButton" type="button" aria-pressed="true">🔊 Sound</button>
+            <button class="button" id="pauseButton" type="button" aria-label="Pause game" disabled>Ⅱ Pause</button>
+        </div>
+    </header>
+    <section class="hud" aria-label="Game status">
+        <div class="stat"><span class="stat-label">Time left</span><span class="stat-value" id="timerValue">1:30</span></div>
+        <div class="stat"><span class="stat-label">Delivered</span><span class="stat-value" id="deliveryValue">0 / 3</span></div>
+        <div class="stat"><span class="stat-label">Bucket</span><span class="stat-value" id="waterValue">0 / 10</span><div class="meter" aria-hidden="true"><div class="meter-fill" id="waterMeter"></div></div></div>
+        <div class="stat"><span class="stat-label">Score</span><span class="stat-value" id="scoreValue">0</span></div>
+        <div class="stat"><span class="stat-label">Weather · lives</span><span class="stat-value" id="weatherValue">☀ Light rain · ♥♥♥</span></div>
+    </section>
+    <section class="game-frame" aria-label="Rain Bucket Challenge game">
+        <canvas id="gameCanvas" width="960" height="560" role="img" aria-label="A character catches falling rain in a bucket and delivers full buckets at the water station."></canvas>
+        <div class="modal-overlay" id="startOverlay">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+                <div class="modal-icon" aria-hidden="true">🌦️</div>
+                <div class="eyebrow">Ready, bucket, go!</div>
+                <h2 id="startTitle">Rain Bucket Challenge</h2>
+                <p>Catch rain to fill a bucket, then carry it to either water station. Deliver three buckets before time runs out!</p>
+                <div class="instructions">
+                    <span><b>← →</b> or <b>A D</b> to move. Hold a direction to keep walking.</span>
+                    <span><b>💧</b> Raindrops fill your bucket; gold and big drops give extra water.</span>
+                    <span><b>🚰</b> A full bucket only counts when you carry it to either station.</span>
+                    <span><b>⚡</b> During storms, watch the warning and dodge the lightning!</span>
+                </div>
+                <div class="best-line">BEST SCORE <span id="startBest">0</span></div>
+                <button class="primary" id="startButton" type="button">Start collecting</button>
+            </div>
+        </div>
+        <div class="modal-overlay" id="pauseOverlay" hidden>
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+                <div class="modal-icon" aria-hidden="true">⏸️</div><h2 id="pauseTitle">Taking a breather?</h2>
+                <p>The rain has paused. Your time, weather, and every raindrop are waiting right where you left them.</p>
+                <button class="primary" id="resumeButton" type="button">Resume game</button>
+                <button class="button secondary" id="restartButton" type="button">Restart round</button>
+            </div>
+        </div>
+        <div class="modal-overlay" id="endOverlay" hidden>
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+                <div class="modal-icon" id="endIcon" aria-hidden="true">🌈</div><h2 id="endTitle">You did it!</h2>
+                <p id="endMessage">Three buckets delivered. The garden is happy!</p>
+                <div class="end-stats">
+                    <div class="end-stat"><b id="finalScore">0</b><span>Score</span></div>
+                    <div class="end-stat"><b id="finalDeliveries">0 / 3</b><span>Delivered</span></div>
+                    <div class="end-stat"><b id="finalBest">0</b><span>Best</span></div>
+                </div>
+                <button class="primary" id="playAgainButton" type="button">Play again</button>
+            </div>
+        </div>
+    </section>
+    <div class="controls" aria-label="Movement controls">
+        <button class="move-button" id="leftButton" type="button" aria-label="Move left">←</button>
+        <button class="move-button" id="rightButton" type="button" aria-label="Move right">→</button>
+    </div>
+    <p class="desktop-hint"><kbd>←</kbd> <kbd>A</kbd> move left &nbsp; <kbd>→</kbd> <kbd>D</kbd> move right &nbsp; <kbd>P</kbd> pause &nbsp; <kbd>M</kbd> sound</p>
+</main>
+<script>
+(() => {
+    "use strict";
+
+    const CONFIG = Object.freeze({
+        width: 960, height: 560, duration: 90, capacity: 10, requiredDeliveries: 3,
+        playerSpeed: 300, spawnStart: .45, spawnMinimum: .19, maxDifficulty: 1.8,
+        dropMinSpeed: 170, dropMaxSpeed: 285, deliveryPoints: 100,
+        weatherMin: 5, weatherMax: 9, stationLeftX: 90, stationRightX: 870, groundY: 490,
+    });
+    const canvas = document.querySelector("#gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const el = {
+        timer: document.querySelector("#timerValue"), delivery: document.querySelector("#deliveryValue"),
+        water: document.querySelector("#waterValue"), meter: document.querySelector("#waterMeter"),
+        score: document.querySelector("#scoreValue"), weather: document.querySelector("#weatherValue"),
+        startOverlay: document.querySelector("#startOverlay"), pauseOverlay: document.querySelector("#pauseOverlay"),
+        endOverlay: document.querySelector("#endOverlay"), pauseButton: document.querySelector("#pauseButton"),
+        soundButton: document.querySelector("#soundButton"), startBest: document.querySelector("#startBest"),
+        endTitle: document.querySelector("#endTitle"), endIcon: document.querySelector("#endIcon"),
+        endMessage: document.querySelector("#endMessage"), finalScore: document.querySelector("#finalScore"),
+        finalDeliveries: document.querySelector("#finalDeliveries"), finalBest: document.querySelector("#finalBest"),
+    };
+    const keys = { left: false, right: false };
+    const player = { x: 210, y: CONFIG.groundY, speed: CONFIG.playerSpeed, walk: 0, facing: 1, invulnerable: 0 };
+    const drops = [];
+    const particles = [];
+    const floaters = [];
+    const flowers = Array.from({ length: 32 }, (_, i) => ({
+        x: 18 + (i * 137) % CONFIG.width,
+        y: CONFIG.groundY + 23 + (i * 19) % 42,
+        color: ["#fb7185", "#fbbf24", "#e879f9", "#f8fafc"][i % 4],
+        phase: i * .72,
+    }));
+    const clouds = [
+        { x: 100, y: 93, scale: 1.05, drift: 6 },
+        { x: 390, y: 65, scale: .78, drift: 4 },
+        { x: 690, y: 110, scale: .9, drift: 5 },
+        { x: 910, y: 63, scale: .72, drift: 3 },
+    ];
+    let state = "start";
+    let score = 0;
+    let bestScore = readBestScore();
+    let delivered = 0;
+    let water = 0;
+    let lives = 3;
+    let timeLeft = CONFIG.duration;
+    let elapsed = 0;
+    let spawnTimer = 0;
+    let weather = "Light rain";
+    let weatherTimer = 11;
+    let weatherDuration = 0;
+    let wind = 0;
+    let weatherTint = 0;
+    let weatherEffect = 0;
+    let lightningTimer = 0;
+    let lightning = null;
+    let worldTime = 0;
+    let feedback = "";
+    let feedbackTimer = 0;
+    let audioContext = null;
+    let ambienceGain = null;
+    let soundEnabled = true;
+    let rafId = 0;
+    let lastFrame = 0;
+
+    function readBestScore() {
+        try {
+            return Math.max(0, Number.parseInt(localStorage.getItem("rain_bucket_best") || "0", 10) || 0);
+        } catch (error) {
+            console.warn("Best score storage is unavailable.", error);
+            return 0;
+        }
+    }
+    function saveBestScore() {
+        try {
+            localStorage.setItem("rain_bucket_best", String(bestScore));
+        } catch (error) {
+            console.warn("Best score could not be saved.", error);
+        }
+    }
+    function ensureAudio() {
+        if (audioContext) return audioContext;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        try {
+            audioContext = new AudioContextClass();
+            return audioContext;
+        } catch (error) {
+            console.warn("Audio is unavailable; continuing without sound.", error);
+            return null;
+        }
+    }
+    function resumeAudio() {
+        const ac = ensureAudio();
+        if (ac?.state === "suspended") ac.resume().catch(error => console.warn("Audio could not resume.", error));
+        return ac;
+    }
+    function setAmbience(active) {
+        const ac = audioContext;
+        if (!ac || !ambienceGain) return;
+        const target = active && soundEnabled ? .018 : 0;
+        ambienceGain.gain.cancelScheduledValues(ac.currentTime);
+        ambienceGain.gain.setTargetAtTime(target, ac.currentTime, .22);
+    }
+    function startAmbience() {
+        const ac = resumeAudio();
+        if (!ac || ambienceGain) return;
+        const length = ac.sampleRate * 2;
+        const buffer = ac.createBuffer(1, length, ac.sampleRate);
+        const channel = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) channel[i] = (Math.random() * 2 - 1) * .22;
+        const source = ac.createBufferSource();
+        const filter = ac.createBiquadFilter();
+        ambienceGain = ac.createGain();
+        source.buffer = buffer;
+        source.loop = true;
+        filter.type = "lowpass";
+        filter.frequency.value = 700;
+        ambienceGain.gain.value = 0;
+        source.connect(filter);
+        filter.connect(ambienceGain);
+        ambienceGain.connect(ac.destination);
+        source.start();
+        setAmbience(true);
+    }
+    function playSound(type) {
+        if (!soundEnabled) return;
+        const ac = resumeAudio();
+        if (!ac) return;
+        const now = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        const sounds = {
+            catch: [520, 880, .11, "sine"],
+            bonus: [640, 1180, .2, "triangle"],
+            full: [430, 860, .28, "sine"],
+            delivery: [390, 980, .42, "triangle"],
+            hit: [220, 90, .35, "sawtooth"],
+            win: [520, 1040, .65, "sine"],
+            lose: [300, 95, .55, "triangle"],
+        };
+        const [from, to, duration, shape] = sounds[type];
+        osc.type = shape;
+        osc.frequency.setValueAtTime(from, now);
+        osc.frequency.exponentialRampToValueAtTime(to, now + duration * .8);
+        gain.gain.setValueAtTime(.15, now);
+        gain.gain.exponentialRampToValueAtTime(.001, now + duration);
+        osc.start(now);
+        osc.stop(now + duration);
+    }
+    function updateSoundButton() {
+        el.soundButton.textContent = soundEnabled ? "🔊 Sound" : "🔇 Muted";
+        el.soundButton.setAttribute("aria-pressed", String(soundEnabled));
+        setAmbience(state === "playing");
+    }
+    function resetRound() {
+        score = 0;
+        delivered = 0;
+        water = 0;
+        lives = 3;
+        timeLeft = CONFIG.duration;
+        elapsed = 0;
+        spawnTimer = 0;
+        weather = "Light rain";
+        weatherTimer = 11;
+        weatherDuration = 0;
+        wind = 0;
+        weatherTint = 0;
+        weatherEffect = 0;
+        lightningTimer = 0;
+        lightning = null;
+        worldTime = 0;
+        feedback = "";
+        feedbackTimer = 0;
+        player.x = 210;
+        player.walk = 0;
+        player.facing = 1;
+        player.invulnerable = 0;
+        drops.length = 0;
+        particles.length = 0;
+        floaters.length = 0;
+        clearInput();
+        updateHUD();
+    }
+    function startGame() {
+        resumeAudio();
+        resetRound();
+        state = "playing";
+        el.startOverlay.hidden = true;
+        el.pauseOverlay.hidden = true;
+        el.endOverlay.hidden = true;
+        el.pauseButton.disabled = false;
+        el.pauseButton.textContent = "Ⅱ Pause";
+        lastFrame = performance.now();
+        startAmbience();
+        updateSoundButton();
+        el.pauseButton.focus({ preventScroll: true });
+    }
+    function pauseGame() {
+        if (state !== "playing") return;
+        state = "paused";
+        clearInput();
+        el.pauseOverlay.hidden = false;
+        el.pauseButton.textContent = "▶ Resume";
+        setAmbience(false);
+        document.querySelector("#resumeButton").focus({ preventScroll: true });
+    }
+    function resumeGame() {
+        if (state !== "paused") return;
+        state = "playing";
+        el.pauseOverlay.hidden = true;
+        el.pauseButton.textContent = "Ⅱ Pause";
+        lastFrame = performance.now();
+        setAmbience(true);
+        el.pauseButton.focus({ preventScroll: true });
+    }
+    function togglePause() {
+        if (state === "playing") pauseGame();
+        else if (state === "paused") resumeGame();
+    }
+    function endGame(result) {
+        if (state !== "playing") return;
+        state = result;
+        clearInput();
+        const newBest = score > bestScore;
+        if (newBest) {
+            bestScore = score;
+            saveBestScore();
+        }
+        el.endTitle.textContent = result === "won" ? "Garden saved!" : "The rain has stopped";
+        el.endIcon.textContent = result === "won" ? "🌈" : "🌧️";
+        el.endMessage.textContent = result === "won"
+            ? `Three full buckets delivered!${newBest ? " That's a new personal best!" : " The garden is blooming again."}`
+            : lives <= 0 ? "The lightning caught you out. Take a breath and try again."
+                : "Time ran out before all three buckets made it to the station. Give it another go!";
+        el.finalScore.textContent = String(score);
+        el.finalDeliveries.textContent = `${delivered} / ${CONFIG.requiredDeliveries}`;
+        el.finalBest.textContent = String(bestScore);
+        el.endOverlay.hidden = false;
+        el.pauseButton.disabled = true;
+        setAmbience(false);
+        playSound(result === "won" ? "win" : "lose");
+        document.querySelector("#playAgainButton").focus({ preventScroll: true });
+    }
+    function updateHUD() {
+        el.timer.textContent = `${Math.floor(timeLeft / 60)}:${String(Math.ceil(timeLeft % 60)).padStart(2, "0")}`;
+        el.delivery.textContent = `${delivered} / ${CONFIG.requiredDeliveries}`;
+        el.water.textContent = `${water} / ${CONFIG.capacity}`;
+        el.meter.style.width = `${water / CONFIG.capacity * 100}%`;
+        el.score.textContent = String(score);
+        const weatherIcon = weather === "Thunderstorm" ? "⚡" : weather === "Heavy rain" ? "🌧" : weather === "Wind" ? "💨" : "☂";
+        el.weather.textContent = `${weatherIcon} ${weather} · ${"♥".repeat(lives)}${"♡".repeat(3 - lives)}`;
+        el.startBest.textContent = String(bestScore);
+    }
+    function setFeedback(text, x = player.x, y = 382, color = "#f8fafc") {
+        feedback = text;
+        feedbackTimer = 1.25;
+        floaters.push({ x, y, text, color, life: 1, vy: -38 });
+    }
+    function addParticles(x, y, color, count = 9) {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 35 + Math.random() * 115;
+            particles.push({
+                x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                life: .55 + Math.random() * .35, maxLife: .9, size: 2 + Math.random() * 4, color,
+            });
+        }
+        if (particles.length > 170) particles.splice(0, particles.length - 170);
+    }
+    function spawnDrop() {
+        const roll = Math.random();
+        let type = "ordinary";
+        if (roll < .035) type = "star";
+        else if (roll < .09) type = "gold";
+        else if (roll < .19) type = "large";
+        const size = type === "large" ? 15 : type === "gold" ? 13 : type === "star" ? 13 : 11;
+        const multiplier = Math.min(CONFIG.maxDifficulty, 1 + elapsed / CONFIG.duration * (CONFIG.maxDifficulty - 1));
+        drops.push({
+            x: 36 + Math.random() * (CONFIG.width - 72), y: -20, size, type,
+            value: type === "gold" ? 3 : type === "large" ? 2 : type === "star" ? 0 : 1,
+            speed: (CONFIG.dropMinSpeed + Math.random() * (CONFIG.dropMaxSpeed - CONFIG.dropMinSpeed)) * multiplier,
+            phase: Math.random() * Math.PI * 2,
+            drift: (Math.random() - .5) * 19,
+        });
+    }
+    function fillBucket(drop) {
+        if (drop.type === "star") {
+            score += 50;
+            setFeedback("+50 ★", drop.x, drop.y - 12, "#fbbf24");
+            addParticles(drop.x, drop.y, "#fde68a", 14);
+            playSound("bonus");
+            return;
+        }
+        const before = water;
+        water = Math.min(CONFIG.capacity, water + drop.value);
+        const catchPoints = drop.type === "gold" ? 30 : drop.type === "large" ? 20 : 10;
+        score += catchPoints;
+        const color = drop.type === "gold" ? "#fbbf24" : drop.type === "large" ? "#67e8f9" : "#bae6fd";
+        setFeedback(`+${catchPoints} · +${water - before} water`, drop.x, drop.y - 13, color);
+        addParticles(drop.x, drop.y, color, drop.type === "ordinary" ? 6 : 12);
+        playSound(drop.type === "ordinary" ? "catch" : "bonus");
+        if (water >= CONFIG.capacity && before < CONFIG.capacity) {
+            setFeedback(`FULL! Deliver it ${player.x < CONFIG.width / 2 ? "←" : "→"}`, player.x + 35, 395, "#34d399");
+            playSound("full");
+        }
+    }
+    function deliverBucket() {
+        const stationX = player.x <= CONFIG.width / 2 ? CONFIG.stationLeftX : CONFIG.stationRightX;
+        const atStation = Math.abs(player.x - stationX) <= 65;
+        if (water < CONFIG.capacity || !atStation) return;
+        delivered += 1;
+        score += CONFIG.deliveryPoints;
+        addParticles(stationX, 400, "#34d399", 24);
+        setFeedback("+100 · Delivered!", stationX, 357, "#34d399");
+        water = 0;
+        playSound("delivery");
+        if (delivered >= CONFIG.requiredDeliveries) {
+            updateHUD();
+            endGame("won");
+            return;
+        }
+        updateHUD();
+    }
+    function nextWeather() {
+        const roll = Math.random();
+        weather = elapsed > 28 && roll < .22 ? "Thunderstorm"
+            : roll < .5 ? "Wind"
+                : "Heavy rain";
+        weatherDuration = CONFIG.weatherMin + Math.random() * (CONFIG.weatherMax - CONFIG.weatherMin);
+        weatherTimer = weatherDuration;
+        wind = weather === "Wind" ? (Math.random() < .5 ? -76 : 76)
+            : weather === "Thunderstorm" ? (Math.random() < .5 ? -118 : 118) : 0;
+        lightning = null;
+        lightningTimer = weather === "Thunderstorm" ? 1.4 : 0;
+        setFeedback(weather === "Thunderstorm" ? "Storm warning — watch for lightning!" : `${weather} rolling in`, CONFIG.width / 2, 185, "#a5b4fc");
+    }
+    function updateWeather(dt) {
+        if (weather === "Light rain") {
+            weatherTimer -= dt;
+            if (weatherTimer <= 0) nextWeather();
+            return;
+        }
+        weatherTimer -= dt;
+        if (weatherTimer <= 0) {
+            weather = "Light rain";
+            weatherTimer = 9 + Math.random() * 5;
+            wind = 0;
+            lightning = null;
+            setFeedback("The clouds are clearing", CONFIG.width / 2, 185, "#a5b4fc");
+            return;
+        }
+        if (weather === "Thunderstorm") {
+            if (lightning) {
+                lightning.timer -= dt;
+                if (lightning.timer <= 0 && !lightning.struck) {
+                    lightning.struck = true;
+                    lightning.timer = .22;
+                    if (Math.abs(player.x - lightning.x) < 48 && player.invulnerable <= 0) {
+                        lives = Math.max(0, lives - 1);
+                        player.invulnerable = 1.35;
+                        addParticles(player.x, 420, "#fbbf24", 18);
+                        setFeedback(lives === 0 ? "Ouch!" : `Strike! ${lives} ${lives === 1 ? "life" : "lives"} left`, player.x, 355, "#fda4af");
+                        playSound("hit");
+                        updateHUD();
+                        if (lives <= 0) {
+                            endGame("lost");
+                            return;
+                        }
+                    }
+                } else if (lightning.struck && lightning.timer <= 0) {
+                    lightning = null;
+                }
+            } else {
+                lightningTimer -= dt;
+                if (lightningTimer <= 0) {
+                    lightning = { x: Math.max(45, Math.min(915, player.x + (Math.random() - .5) * 80)), timer: .95, struck: false };
+                    lightningTimer = 2.7 + Math.random() * 1.5;
+                }
+            }
+        }
+    }
+    function updateGame(dt) {
+        elapsed += dt;
+        timeLeft = Math.max(0, CONFIG.duration - elapsed);
+        worldTime += dt;
+        player.invulnerable = Math.max(0, player.invulnerable - dt);
+        updateWeather(dt);
+        if (state !== "playing") return;
+        const weatherTarget = weather === "Thunderstorm" ? 1 : weather === "Heavy rain" ? .72 : weather === "Wind" ? .42 : 0;
+        weatherEffect += (weatherTarget - weatherEffect) * Math.min(1, dt * 1.8);
+        weatherTint += ((weather === "Thunderstorm" ? .28 : weather === "Heavy rain" ? .1 : 0) - weatherTint) * Math.min(1, dt * 1.4);
+        const direction = Number(keys.right) - Number(keys.left);
+        player.x = Math.max(45, Math.min(900, player.x + direction * player.speed * dt));
+        if (direction) {
+            player.facing = direction;
+            player.walk += dt * 10;
+        }
+        const difficulty = Math.min(CONFIG.maxDifficulty, 1 + elapsed / CONFIG.duration * (CONFIG.maxDifficulty - 1));
+        const spawnInterval = Math.max(CONFIG.spawnMinimum, CONFIG.spawnStart / difficulty) * (weather === "Heavy rain" ? .57 : 1);
+        spawnTimer += dt;
+        while (spawnTimer >= spawnInterval) {
+            spawnTimer -= spawnInterval;
+            spawnDrop();
+        }
+        const bucketX = player.x + (player.facing > 0 ? 25 : -60);
+        const bucketTop = 434;
+        for (let i = drops.length - 1; i >= 0; i--) {
+            const drop = drops[i];
+            drop.y += drop.speed * dt;
+            drop.x += (wind + drop.drift + Math.sin(worldTime * 1.4 + drop.phase) * 11) * dt;
+            if (drop.x < 18 || drop.x > CONFIG.width - 18) drop.drift *= -1;
+            const inOpening = drop.x >= bucketX + 4 && drop.x <= bucketX + 39;
+            if (inOpening && drop.y >= bucketTop && drop.y - drop.speed * dt < bucketTop + 8) {
+                fillBucket(drop);
+                drops.splice(i, 1);
+                continue;
+            }
+            if (drop.y > CONFIG.groundY + 25) drops.splice(i, 1);
+        }
+        deliverBucket();
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vy += 100 * dt;
+            p.life -= dt;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+        for (let i = floaters.length - 1; i >= 0; i--) {
+            const f = floaters[i];
+            f.y += f.vy * dt;
+            f.life -= dt;
+            if (f.life <= 0) floaters.splice(i, 1);
+        }
+        feedbackTimer = Math.max(0, feedbackTimer - dt);
+        updateHUD();
+        if (timeLeft <= 0) endGame("lost");
+    }
+    function roundedRect(x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, height, radius);
+    }
+    function drawCloud(x, y, scale, alpha = 1) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#e6f1f6";
+        ctx.beginPath();
+        ctx.ellipse(0, 12, 39, 19, 0, 0, Math.PI * 2);
+        ctx.ellipse(-23, 5, 21, 17, 0, 0, Math.PI * 2);
+        ctx.ellipse(1, -2, 24, 23, 0, 0, Math.PI * 2);
+        ctx.ellipse(26, 7, 22, 17, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+    function drawBackground() {
+        const sky = ctx.createLinearGradient(0, 0, 0, CONFIG.groundY);
+        sky.addColorStop(0, "#6998b4");
+        sky.addColorStop(.64, "#a9c9d7");
+        sky.addColorStop(1, "#d2e2e5");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+        ctx.save();
+        ctx.globalAlpha = .48;
+        ctx.fillStyle = "#e5edf0";
+        ctx.beginPath();
+        ctx.arc(786, 89, 23, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        for (const cloud of clouds) {
+            const drift = state === "playing" ? Math.sin(worldTime * .14 + cloud.drift) * 12 : 0;
+            drawCloud(cloud.x + drift, cloud.y, cloud.scale, .95 - weatherTint * .65);
+        }
+        ctx.fillStyle = "#8cc79c";
+        ctx.beginPath();
+        ctx.moveTo(0, 378);
+        ctx.quadraticCurveTo(168, 297, 353, 379);
+        ctx.quadraticCurveTo(550, 447, 743, 358);
+        ctx.quadraticCurveTo(865, 304, 960, 356);
+        ctx.lineTo(960, CONFIG.height);
+        ctx.lineTo(0, CONFIG.height);
+        ctx.fill();
+        ctx.fillStyle = "#69b982";
+        ctx.beginPath();
+        ctx.moveTo(0, 423);
+        ctx.quadraticCurveTo(192, 359, 385, 433);
+        ctx.quadraticCurveTo(609, 504, 811, 409);
+        ctx.quadraticCurveTo(902, 369, 960, 405);
+        ctx.lineTo(960, CONFIG.height);
+        ctx.lineTo(0, CONFIG.height);
+        ctx.fill();
+        const ground = ctx.createLinearGradient(0, CONFIG.groundY, 0, CONFIG.height);
+        ground.addColorStop(0, "#37b779");
+        ground.addColorStop(1, "#16845c");
+        ctx.fillStyle = ground;
+        ctx.fillRect(0, CONFIG.groundY, CONFIG.width, CONFIG.height - CONFIG.groundY);
+        ctx.strokeStyle = "rgba(220,252,231,.25)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, CONFIG.groundY + 2);
+        ctx.lineTo(CONFIG.width, CONFIG.groundY + 2);
+        ctx.stroke();
+        for (const flower of flowers) {
+            const sway = Math.sin(worldTime * 2 + flower.phase) * 2.3;
+            ctx.strokeStyle = "#bbf7d0";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(flower.x, flower.y + 11);
+            ctx.lineTo(flower.x + sway, flower.y);
+            ctx.stroke();
+            ctx.fillStyle = flower.color;
+            ctx.beginPath();
+            ctx.arc(flower.x + sway, flower.y, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#fef3c7";
+            ctx.beginPath();
+            ctx.arc(flower.x + sway, flower.y, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        if (weatherTint > .005) {
+            ctx.fillStyle = `rgba(37,54,85,${weatherTint})`;
+            ctx.fillRect(0, 0, CONFIG.width, CONFIG.groundY + 3);
+        }
+    }
+    function drawStation(x) {
+        const y = 327;
+        ctx.save();
+        ctx.shadowColor = "rgba(14,165,233,.34)";
+        ctx.shadowBlur = 18;
+        roundedRect(x - 53, y + 6, 105, 163, 16);
+        ctx.fillStyle = "#0c5d85";
+        ctx.fill();
+        ctx.restore();
+        roundedRect(x - 47, y, 94, 160, 14);
+        const tank = ctx.createLinearGradient(x - 45, y, x + 45, y + 150);
+        tank.addColorStop(0, "#38bdf8");
+        tank.addColorStop(1, "#0369a1");
+        ctx.fillStyle = tank;
+        ctx.fill();
+        ctx.strokeStyle = "#dbeafe";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        roundedRect(x - 31, y + 21, 62, 43, 9);
+        ctx.fillStyle = "#e0f2fe";
+        ctx.fill();
+        ctx.fillStyle = "#0369a1";
+        ctx.font = "700 13px Outfit, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("WATER", x, y + 39);
+        ctx.fillText("STATION", x, y + 55);
+        ctx.fillStyle = "rgba(224,242,254,.65)";
+        ctx.fillRect(x - 12, y + 73, 24, 11);
+        roundedRect(x - 9, y + 81, 18, 38, 5);
+        ctx.fillStyle = "#bae6fd";
+        ctx.fill();
+        ctx.fillStyle = "rgba(186,230,253,.58)";
+        ctx.beginPath();
+        ctx.ellipse(x, y + 120, 20, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#dbeafe";
+        ctx.font = "600 11px Outfit, sans-serif";
+        ctx.fillText("DELIVER HERE", x, y + 150);
+        const atStation = Math.abs(player.x - x) <= 65;
+        if (water >= CONFIG.capacity && atStation) {
+            ctx.save();
+            ctx.globalAlpha = .75 + Math.sin(worldTime * 6) * .2;
+            ctx.strokeStyle = "#34d399";
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 5]);
+            ctx.beginPath();
+            ctx.roundRect(x - 71, y - 10, 142, 181, 18);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+    function drawBucket() {
+        const x = player.x + (player.facing > 0 ? 25 : -60);
+        const top = 434;
+        const fillHeight = 27 * water / CONFIG.capacity;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x + 5, top + 3);
+        ctx.lineTo(x + 38, top + 3);
+        ctx.lineTo(x + 33, top + 34);
+        ctx.lineTo(x + 10, top + 34);
+        ctx.closePath();
+        ctx.clip();
+        if (fillHeight > 0) {
+            const fill = ctx.createLinearGradient(0, top + 34 - fillHeight, 0, top + 34);
+            fill.addColorStop(0, water >= CONFIG.capacity ? "#6ee7b7" : "#7dd3fc");
+            fill.addColorStop(1, water >= CONFIG.capacity ? "#059669" : "#0284c7");
+            ctx.fillStyle = fill;
+            ctx.fillRect(x, top + 34 - fillHeight, 44, fillHeight + 4);
+            ctx.globalAlpha = .45;
+            ctx.fillStyle = "#e0f2fe";
+            ctx.fillRect(x + 4, top + 34 - fillHeight, 34, 2);
+        }
+        ctx.restore();
+        ctx.beginPath();
+        ctx.moveTo(x + 4, top + 2);
+        ctx.lineTo(x + 39, top + 2);
+        ctx.lineTo(x + 34, top + 35);
+        ctx.quadraticCurveTo(x + 21, top + 40, x + 8, top + 35);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(224,242,254,.18)";
+        ctx.fill();
+        ctx.strokeStyle = water >= CONFIG.capacity ? "#a7f3d0" : "#e0f2fe";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(x + 21.5, top + 3, 18, 5.2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = water >= CONFIG.capacity ? "#34d399" : "#bae6fd";
+        ctx.fill();
+        ctx.strokeStyle = "#f0f9ff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = water >= CONFIG.capacity ? "#fbbf24" : "#f8fafc";
+        ctx.font = "700 10px Outfit, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`${water}/${CONFIG.capacity}`, x + 21, top + 25);
+        if (water >= CONFIG.capacity) {
+            ctx.fillStyle = "#34d399";
+            ctx.font = "800 13px Outfit, sans-serif";
+            ctx.fillText("FULL!", x + 21, top - 9);
+        }
+    }
+    function drawPlayer() {
+        if (player.invulnerable > 0 && Math.floor(worldTime * 12) % 2 === 0) return;
+        const x = 0;
+        const step = Math.sin(player.walk) * (keys.left || keys.right ? 3 : 0);
+        ctx.save();
+        ctx.translate(player.x, 0);
+        ctx.scale(player.facing, 1);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#1e3a5f";
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.moveTo(x - 8, 462);
+        ctx.lineTo(x - 11 - step, 482);
+        ctx.moveTo(x + 8, 462);
+        ctx.lineTo(x + 11 + step, 482);
+        ctx.stroke();
+        ctx.strokeStyle = "#f8fafc";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(x - 11 - step, 482);
+        ctx.lineTo(x - 2 - step, 482);
+        ctx.moveTo(x + 11 + step, 482);
+        ctx.lineTo(x + 20 + step, 482);
+        ctx.stroke();
+        const body = ctx.createLinearGradient(x - 19, 420, x + 19, 468);
+        body.addColorStop(0, "#34d399");
+        body.addColorStop(1, "#059669");
+        roundedRect(x - 20, 422, 40, 47, 14);
+        ctx.fillStyle = body;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(209,250,229,.75)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#f7c9a7";
+        ctx.beginPath();
+        ctx.arc(x, 407, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#b96d59";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#5b3b47";
+        ctx.beginPath();
+        ctx.arc(x, 403, 23, Math.PI, Math.PI * 2);
+        ctx.lineTo(x + 20, 402);
+        ctx.quadraticCurveTo(x, 393, x - 20, 405);
+        ctx.fill();
+        ctx.fillStyle = "#f8fafc";
+        ctx.beginPath();
+        ctx.arc(x - 7, 409, 3.2, 0, Math.PI * 2);
+        ctx.arc(x + 7, 409, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#22324a";
+        ctx.beginPath();
+        ctx.arc(x - 7 + 2, 409, 1.9, 0, Math.PI * 2);
+        ctx.arc(x + 7 + 2, 409, 1.9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#d99178";
+        ctx.beginPath();
+        ctx.ellipse(11, 413, 2.4, 1.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#b45353";
+        ctx.lineWidth = 1.7;
+        ctx.beginPath();
+        ctx.arc(x, 414, 5, .15, Math.PI - .15);
+        ctx.stroke();
+        ctx.strokeStyle = "#f7c9a7";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(x - 16, 433);
+        ctx.lineTo(x - 25, 445);
+        ctx.moveTo(x + 16, 433);
+        ctx.lineTo(x + 28, 442);
+        ctx.stroke();
+        ctx.fillStyle = "#fde68a";
+        ctx.beginPath();
+        ctx.arc(x - 26, 445, 4, 0, Math.PI * 2);
+        ctx.arc(x + 29, 442, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        drawBucket();
+    }
+    function drawDrop(drop) {
+        const colors = {
+            ordinary: ["#f0fdff", "#0284c7"],
+            large: ["#ecfeff", "#0e7490"],
+            gold: ["#fef3c7", "#f59e0b"],
+            star: ["#fef9c3", "#eab308"],
+        };
+        const [light, dark] = colors[drop.type];
+        ctx.save();
+        ctx.translate(drop.x, drop.y);
+        if (drop.type === "star") {
+            ctx.rotate(worldTime * 2 + drop.phase);
+            ctx.shadowColor = dark;
+            ctx.shadowBlur = 13;
+            ctx.fillStyle = light;
+            ctx.strokeStyle = dark;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const radius = i % 2 ? drop.size * .43 : drop.size;
+                const angle = -Math.PI / 2 + i * Math.PI / 5;
+                const px = Math.cos(angle) * radius;
+                const py = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            ctx.shadowColor = dark;
+            ctx.shadowBlur = drop.type === "ordinary" ? 15 : 19;
+            ctx.beginPath();
+            ctx.moveTo(0, -drop.size);
+            ctx.bezierCurveTo(drop.size * .5, -drop.size * .25, drop.size, drop.size * .34, drop.size * .65, drop.size * .72);
+            ctx.quadraticCurveTo(0, drop.size * 1.18, -drop.size * .65, drop.size * .72);
+            ctx.bezierCurveTo(-drop.size, drop.size * .34, -drop.size * .5, -drop.size * .25, 0, -drop.size);
+            const grad = ctx.createLinearGradient(-drop.size, -drop.size, drop.size, drop.size);
+            grad.addColorStop(0, light);
+            grad.addColorStop(1, dark);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = drop.type === "ordinary" ? "#075985" : "#164e63";
+            ctx.lineWidth = drop.type === "ordinary" ? 2.3 : 2.7;
+            ctx.stroke();
+            ctx.fillStyle = "rgba(255,255,255,.72)";
+            ctx.beginPath();
+            ctx.ellipse(-drop.size * .2, drop.size * .24, drop.size * .17, drop.size * .31, -.35, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+    function drawLightning() {
+        if (!lightning) return;
+        const x = lightning.x;
+        if (!lightning.struck) {
+            const pulse = .28 + Math.sin(worldTime * 18) * .13;
+            ctx.save();
+            ctx.globalAlpha = pulse;
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineWidth = 5;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, CONFIG.groundY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+            ctx.fillStyle = "#854d0e";
+            ctx.font = "700 13px Outfit, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("DODGE!", x, 182);
+        } else {
+            ctx.save();
+            ctx.shadowColor = "#fef3c7";
+            ctx.shadowBlur = 22;
+            ctx.strokeStyle = "#fef3c7";
+            ctx.lineWidth = 7;
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x - 13, 75);
+            ctx.lineTo(x + 8, 69);
+            ctx.lineTo(x - 7, 148);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+    function render() {
+        ctx.clearRect(0, 0, CONFIG.width, CONFIG.height);
+        drawBackground();
+        drawStation(CONFIG.stationLeftX);
+        drawStation(CONFIG.stationRightX);
+        if (weather === "Wind" || weather === "Thunderstorm" || weather === "Heavy rain") {
+            const rainCount = Math.round(weather === "Heavy rain" || weather === "Thunderstorm" ? 28 * weatherEffect : 14 * weatherEffect);
+            ctx.save();
+            ctx.globalAlpha = weatherEffect;
+            ctx.strokeStyle = weather === "Thunderstorm" ? "rgba(219,234,254,.43)" : "rgba(224,242,254,.58)";
+            ctx.lineWidth = weather === "Thunderstorm" ? 2 : 1.5;
+            for (let i = 0; i < rainCount; i++) {
+                const x = (i * 97 + worldTime * (weather === "Thunderstorm" ? 240 : 110)) % CONFIG.width;
+                const y = (i * 67 + worldTime * 220) % CONFIG.groundY;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - (wind ? Math.sign(wind) * 8 : 2), y + 13);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        for (const drop of drops) drawDrop(drop);
+        drawLightning();
+        drawPlayer();
+        for (const p of particles) {
+            ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * Math.max(.2, p.life / p.maxLife), 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        for (const f of floaters) {
+            ctx.globalAlpha = Math.max(0, f.life);
+            ctx.fillStyle = f.color;
+            ctx.font = "800 16px Outfit, sans-serif";
+            ctx.textAlign = "center";
+            ctx.shadowColor = "rgba(15,23,42,.5)";
+            ctx.shadowBlur = 4;
+            ctx.fillText(f.text, f.x, f.y);
+        }
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        if (state === "playing" && water >= CONFIG.capacity) {
+            ctx.fillStyle = "rgba(5,46,42,.72)";
+            roundedRect(309, 19, 342, 39, 14);
+            ctx.fill();
+            ctx.fillStyle = "#a7f3d0";
+            ctx.font = "700 16px Outfit, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`Bucket full! Head to the ${player.x < CONFIG.width / 2 ? "left" : "right"} station ${player.x < CONFIG.width / 2 ? "←" : "→"}`, CONFIG.width / 2, 44);
+        }
+    }
+    function frame(now) {
+        const dt = lastFrame ? Math.min(.05, (now - lastFrame) / 1000) : 0;
+        lastFrame = now;
+        if (state === "playing") updateGame(dt);
+        render();
+        rafId = requestAnimationFrame(frame);
+    }
+    function clearInput() {
+        keys.left = false;
+        keys.right = false;
+        document.querySelectorAll(".move-button").forEach(button => button.classList.remove("pressed"));
+    }
+    function setDirection(button, direction) {
+        const press = event => {
+            event.preventDefault();
+            if (state !== "playing") return;
+            keys[direction] = true;
+            button.classList.add("pressed");
+            if (event.pointerId !== undefined && button.setPointerCapture) button.setPointerCapture(event.pointerId);
+        };
+        const release = event => {
+            if (event?.pointerId !== undefined && button.hasPointerCapture?.(event.pointerId)) button.releasePointerCapture(event.pointerId);
+            keys[direction] = false;
+            button.classList.remove("pressed");
+        };
+        button.addEventListener("pointerdown", press);
+        button.addEventListener("pointerup", release);
+        button.addEventListener("pointercancel", release);
+        button.addEventListener("lostpointercapture", release);
+    }
+    setDirection(document.querySelector("#leftButton"), "left");
+    setDirection(document.querySelector("#rightButton"), "right");
+    window.addEventListener("keydown", event => {
+        const key = event.key.toLowerCase();
+        if (["arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
+        if (key === "arrowleft" || key === "a") keys.left = state === "playing";
+        if (key === "arrowright" || key === "d") keys.right = state === "playing";
+        if ((key === "p" || key === "escape") && !event.repeat) togglePause();
+        if (key === "m" && !event.repeat) {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled) startAmbience();
+            updateSoundButton();
+        }
+        if (key === "enter" && state === "start") startGame();
+    });
+    window.addEventListener("keyup", event => {
+        const key = event.key.toLowerCase();
+        if (key === "arrowleft" || key === "a") keys.left = false;
+        if (key === "arrowright" || key === "d") keys.right = false;
+    });
+    window.addEventListener("blur", clearInput);
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden && state === "playing") pauseGame();
+    });
+    document.querySelector("#startButton").addEventListener("click", startGame);
+    document.querySelector("#playAgainButton").addEventListener("click", startGame);
+    document.querySelector("#resumeButton").addEventListener("click", resumeGame);
+    document.querySelector("#restartButton").addEventListener("click", startGame);
+    el.pauseButton.addEventListener("click", togglePause);
+    el.soundButton.addEventListener("click", () => {
+        soundEnabled = !soundEnabled;
+        if (soundEnabled) startAmbience();
+        updateSoundButton();
+    });
+    el.startBest.textContent = String(bestScore);
+    updateHUD();
+    updateSoundButton();
+    if (!rafId) rafId = requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
