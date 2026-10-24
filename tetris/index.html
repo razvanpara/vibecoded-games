@@ -47,9 +47,40 @@
         }
         .back-link:hover, .back-link:focus-visible { border-color: rgba(129,140,248,.5); background: rgba(99,102,241,.16); color: #c4b5fd; outline: none; }
         canvas { display: block; width: 100%; height: auto; touch-action: none; outline: none; }
-        @media (pointer: coarse), (max-width: 700px) {
+        .mobile-controls { display: none; }
+        @media (any-pointer: coarse), (max-width: 900px) {
             .topbar { height: 44px; }
             .back-link { min-height: 42px; padding: 10px 13px; }
+            .mobile-controls {
+                display: grid;
+                grid-template: repeat(2, 38.4px) / repeat(5, minmax(0, 1fr));
+                gap: 4.8px;
+            }
+            .mobile-controls button {
+                min-width: 0;
+                min-height: 0;
+                border: 1px solid rgba(148,163,184,.3);
+                border-radius: 10px;
+                background: rgba(30,41,59,.9);
+                color: #f8fafc;
+                font: 700 1.08rem system-ui, sans-serif;
+                touch-action: none;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            .mobile-controls button:active {
+                border-color: rgba(129,140,248,.8);
+                background: rgba(99,102,241,.35);
+            }
+            .mobile-controls button:focus-visible {
+                outline: 2px solid #a5b4fc;
+                outline-offset: 2px;
+            }
+            .mobile-controls .up { grid-row: 1; grid-column: 2; }
+            .mobile-controls .left { grid-row: 2; grid-column: 1; }
+            .mobile-controls .down { grid-row: 2; grid-column: 2; }
+            .mobile-controls .right { grid-row: 2; grid-column: 3; }
+            .mobile-controls .drop { grid-row: 1 / span 2; grid-column: 5; font-size: .8rem; }
         }
     </style>
 </head>
@@ -57,6 +88,13 @@
     <main class="game-shell">
         <header class="topbar"><a class="back-link" href="../index.html">← Games</a></header>
         <canvas id="game" width="500" height="600" tabindex="0" aria-label="Tetris. Use arrow keys to move and rotate."></canvas>
+        <div class="mobile-controls" aria-label="Touch controls">
+            <button class="up" type="button" aria-label="Rotate piece">↑</button>
+            <button class="left" type="button" aria-label="Move piece left">←</button>
+            <button class="down" type="button" aria-label="Soft drop piece">↓</button>
+            <button class="right" type="button" aria-label="Move piece right">→</button>
+            <button class="drop" type="button" aria-label="Hard drop piece">DROP</button>
+        </div>
     </main>
     <script>
     (() => {
@@ -152,9 +190,12 @@
 
         function resizeCanvas() {
             const margin = 16;
-            const topbar = window.matchMedia("(pointer: coarse), (max-width: 700px)").matches ? 44 : 34;
+            const mobile = window.matchMedia("(any-pointer: coarse), (max-width: 900px)").matches;
+            const topbar = mobile ? 44 : 34;
             const availableWidth = Math.max(1, window.innerWidth - margin * 2);
-            const availableHeight = Math.max(1, window.innerHeight - topbar - 8 - margin * 2);
+            const controlsHeight = mobile ? 81.6 : 0;
+            const shellGaps = mobile ? 16 : 8;
+            const availableHeight = Math.max(1, window.innerHeight - topbar - shellGaps - controlsHeight - margin * 2);
             const scale = Math.min(availableWidth / CANVAS_WIDTH, availableHeight / CANVAS_HEIGHT);
             canvas.style.width = `${CANVAS_WIDTH * scale}px`;
             canvas.style.height = `${CANVAS_HEIGHT * scale}px`;
@@ -250,15 +291,9 @@
                     rotated[clockwise ? x : size - 1 - x][clockwise ? size - 1 - y : y] = active.shape[y][x];
                 }
             }
-            for (const [dx, dy] of [[-1,0],[1,0],[-2,0],[2,0],[0,-1]]) {
-                if (!collides(active, dx, dy, rotated)) {
-                    active.x += dx;
-                    active.y += dy;
-                    active.shape = rotated;
-                    resetLockAfterAction();
-                    return;
-                }
-            }
+            if (collides(active, 0, 0, rotated)) return;
+            active.shape = rotated;
+            resetLockAfterAction();
         }
 
         function softDropOne() {
@@ -382,12 +417,7 @@
             if (state !== "playing") return;
             if (key === KEY.LEFT || key === KEY.RIGHT) {
                 const dir = key === KEY.LEFT ? -1 : 1;
-                if (heldDirection !== dir) {
-                    heldDirection = dir;
-                    directionHeldElapsed = 0;
-                    directionRepeatElapsed = 0;
-                    moveHorizontal(dir);
-                }
+                beginHorizontalControl(dir);
             } else if (key === KEY.DOWN) {
                 softDropHeld = true;
             } else if (KEY.ROTATE_CW.includes(key)) {
@@ -409,12 +439,46 @@
             if (event.key === KEY.DOWN) softDropHeld = false;
         }
 
+        function beginHorizontalControl(direction) {
+            if (heldDirection === direction) return;
+            heldDirection = direction;
+            directionHeldElapsed = 0;
+            directionRepeatElapsed = 0;
+            moveHorizontal(direction);
+        }
+
+        function endHorizontalControl(direction) {
+            if (heldDirection !== direction) return;
+            heldDirection = 0;
+            directionHeldElapsed = 0;
+            directionRepeatElapsed = 0;
+        }
+
         function heldKeyForDirection() {
             return heldDirection < 0 ? KEY.LEFT : heldDirection > 0 ? KEY.RIGHT : "";
         }
 
+        function bindHoldButton(button, onPress, onRelease) {
+            button.addEventListener("pointerdown", event => {
+                event.preventDefault();
+                button.setPointerCapture(event.pointerId);
+                onPress();
+                render();
+            });
+            const release = event => {
+                if (event && event.pointerId !== undefined && !button.hasPointerCapture(event.pointerId)) return;
+                onRelease();
+                render();
+            };
+            button.addEventListener("pointerup", release);
+            button.addEventListener("pointercancel", release);
+            button.addEventListener("lostpointercapture", release);
+        }
+
         function pointerDown(event) {
             event.preventDefault();
+            if (window.matchMedia("(any-pointer: coarse), (max-width: 900px)").matches &&
+                state === "playing") return;
             canvas.setPointerCapture(event.pointerId);
             pointerStart = { x: event.clientX, y: event.clientY, time: performance.now() };
         }
@@ -431,6 +495,7 @@
                 return;
             }
             if (state !== "playing") return;
+            if (window.matchMedia("(any-pointer: coarse), (max-width: 900px)").matches) return;
             if (Math.abs(dx) < TOUCH_SWIPE_DISTANCE && Math.abs(dy) < TOUCH_SWIPE_DISTANCE) {
                 rotatePiece(true);
             } else if (Math.abs(dx) > Math.abs(dy)) {
@@ -601,6 +666,18 @@
 
         document.addEventListener("keydown", keyDown);
         document.addEventListener("keyup", keyUp);
+        const controls = document.querySelector(".mobile-controls");
+        bindHoldButton(controls.querySelector(".left"), () => beginHorizontalControl(-1), () => endHorizontalControl(-1));
+        bindHoldButton(controls.querySelector(".right"), () => beginHorizontalControl(1), () => endHorizontalControl(1));
+        bindHoldButton(controls.querySelector(".down"), () => { softDropHeld = true; }, () => { softDropHeld = false; });
+        controls.querySelector(".up").addEventListener("click", () => {
+            rotatePiece(true);
+            render();
+        });
+        controls.querySelector(".drop").addEventListener("click", () => {
+            hardDrop();
+            render();
+        });
         window.addEventListener("blur", () => {
             heldDirection = 0;
             softDropHeld = false;
