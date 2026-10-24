@@ -34,9 +34,9 @@
     .minimap-label{display:flex;justify-content:space-between;gap:8px;margin:0 2px 5px;color:#a9b7c8;font:500 .53rem "DM Mono",monospace;letter-spacing:.07em}
     .minimap-label strong{color:#a7f3d0;font-weight:500}
     #minimap{display:block;width:100%;height:auto;aspect-ratio:180/126;border:1px solid #ffffff18;border-radius:6px}
-    .minimap-opacity{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:5px;margin:5px 2px 0;color:#a9b7c8;font:500 .5rem "DM Mono",monospace}
-    .minimap-opacity input{width:100%;height:14px;margin:0;accent-color:#6ee7b7;cursor:pointer}
-    .minimap-opacity output{min-width:24px;color:#a7f3d0;text-align:right}
+    .minimap-control{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:5px;margin:5px 2px 0;color:#a9b7c8;font:500 .5rem "DM Mono",monospace}
+    .minimap-control input{width:100%;height:14px;margin:0;accent-color:#6ee7b7;cursor:pointer}
+    .minimap-control output{min-width:24px;color:#a7f3d0;text-align:right}
     .overlay{position:absolute;z-index:3;inset:0;display:grid;place-items:center;padding:20px;background:#06100dcc;backdrop-filter:blur(5px)}
     .overlay[hidden]{display:none}
     .panel{width:min(430px,100%);padding:25px;border:1px solid #ffffff24;border-radius:18px;background:linear-gradient(145deg,#1b2b38f5,#111925f5);box-shadow:0 25px 80px #0009}
@@ -79,8 +79,8 @@
       .hud .tool{padding:7px 9px;font-size:.75rem}
       .minimap{right:7px;bottom:7px;width:112px;padding:5px;border-radius:9px}
       .minimap-label{font-size:.46rem;margin-bottom:3px}
-      .minimap-opacity{gap:3px;margin-top:3px;font-size:.43rem}
-      .minimap-opacity output{min-width:21px}
+      .minimap-control{gap:3px;margin-top:3px;font-size:.43rem}
+      .minimap-control output{min-width:21px}
       .touch-controls{display:flex}
       .touch-btn{min-width:43px;min-height:43px;border-radius:12px}
       .joystick{width:126px;height:126px;flex-basis:126px}
@@ -117,10 +117,15 @@
     <div class="minimap" role="group" aria-label="Arena minimap showing the cat, mice, dogs, and obstacles">
       <div class="minimap-label"><span>ARENA MAP</span><strong id="minimap-level">LEVEL 1</strong></div>
       <canvas id="minimap" width="180" height="126" aria-hidden="true"></canvas>
-      <label class="minimap-opacity" for="minimap-opacity">
+      <label class="minimap-control" for="minimap-opacity">
         <span>Opacity</span>
         <input id="minimap-opacity" type="range" min="20" max="100" step="5" value="85" aria-label="Minimap opacity">
         <output id="minimap-opacity-value" for="minimap-opacity">85%</output>
+      </label>
+      <label class="minimap-control" for="zoom">
+        <span>Zoom</span>
+        <input id="zoom" type="range" min="65" max="150" step="5" value="150" aria-label="Game zoom">
+        <output id="zoom-value" for="zoom">150%</output>
       </label>
     </div>
     <section id="start-screen" class="overlay" aria-labelledby="start-title">
@@ -152,7 +157,7 @@
 (() => {
   "use strict";
   const C = {
-    cols: 40, rows: 28, tile: 40, zoom: 1.5, mice: 10, dogs: 5, catSpeed: 166,
+    cols: 40, rows: 28, tile: 40, zoom: window.matchMedia("(max-width: 640px)").matches ? .75 : 1.5, mice: 10, dogs: 5, catSpeed: 166,
     catRadius: 12, mouseSpeed: 94, dogSpeed: 82, alertSpeedMultiplier: 1.5, alertSpeedDuration: 1, jumpTime: .58, mouseJumpTime: .85,
     mouseVision: 245, dogVision: 410, mouseMemory: 1.7, dogMemory: 1.5, fenceBreak: 1.2, mouseFov: Math.PI * .72,
     dogFov: Math.PI * .82, catSprint: 2, catRecovery: 1,
@@ -164,6 +169,7 @@
   const world = {w:C.cols*C.tile,h:C.rows*C.tile};
   const minimap=document.querySelector("#minimap"),mapCtx=minimap.getContext("2d");
   const minimapPanel=document.querySelector(".minimap"),minimapOpacity=document.querySelector("#minimap-opacity"),minimapOpacityValue=document.querySelector("#minimap-opacity-value");
+  const zoomSlider=document.querySelector("#zoom"),zoomValue=document.querySelector("#zoom-value");
   const joystick=document.querySelector("#joystick"),joystickStick=document.querySelector("#joystick-stick"),joystickDirection=document.querySelector("#joystick-direction");
   const joystickSectors=[
     {label:"E",directions:["right"]},{label:"SE",directions:["right","down"]},
@@ -235,6 +241,12 @@
     minimapOpacityValue.value=`${opacity}%`;
     minimapOpacityValue.textContent=`${opacity}%`;
     minimapOpacity.setAttribute("aria-valuetext",`${opacity}% opacity`);
+  }
+  function setZoom(){
+    C.zoom=Number(zoomSlider.value)/100;
+    zoomValue.value=`${zoomSlider.value}%`;
+    zoomValue.textContent=`${zoomSlider.value}%`;
+    zoomSlider.setAttribute("aria-valuetext",`${zoomSlider.value}%`);
   }
   function updateJoystick(e){
     const rect=joystick.getBoundingClientRect(),radius=Math.min(rect.width,rect.height)/2;
@@ -576,7 +588,9 @@
   document.querySelector("#new-arena").addEventListener("click",()=>{level=1;makeArena();});
   document.querySelector("#end-arena").addEventListener("click",()=>{level=1;makeArena();});
   minimapOpacity.addEventListener("input",setMinimapOpacity);
-  setMinimapOpacity();
+  zoomSlider.addEventListener("input",setZoom);
+  zoomSlider.value=String(C.zoom*100);
+  setMinimapOpacity();setZoom();
   window.addEventListener("resize",setSize,{passive:true});
   makeArena();setSize();requestAnimationFrame(frame);
 })();
