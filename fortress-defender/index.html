@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#090d16" />
+    <meta name="description" content="Fortress Defender is a medieval archery defense game set in a fantasy castle." />
+    <title>Fortress Defender — Arcade Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg-base: #090d16;
+        --surface: rgba(15, 23, 42, 0.78);
+        --panel: rgba(22, 30, 49, 0.84);
+        --panel-border: rgba(148, 163, 184, 0.22);
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --accent: #fbbf24;
+        --accent-2: #f59e0b;
+        --accent-cyan: #67e8f9;
+        --accent-emerald: #34d399;
+        --accent-rose: #f87171;
+        --danger: #fb7185;
+        --shadow: rgba(15, 23, 42, 0.55);
+        --hud-line: rgba(255, 255, 255, 0.06);
+        --button: rgba(30, 41, 59, 0.9);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+      }
+
+      html, body {
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: 'Outfit', system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 15% 10%, rgba(251, 191, 36, 0.12), transparent 30%),
+          radial-gradient(circle at 85% 15%, rgba(103, 232, 249, 0.12), transparent 28%),
+          linear-gradient(180deg, #090d16 0%, #0b1120 100%);
+        overflow-x: hidden;
+        touch-action: manipulation;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        background-size: 36px 36px;
+      }
+
+      .game-page {
+        position: relative;
+        z-index: 1;
+        width: min(1100px, calc(100vw - 28px));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .topbar {
+        width: min(960px, 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(15, 23, 42, 0.4);
+        text-decoration: none;
+        color: var(--text);
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: transform 0.18s ease, border-color 0.18s ease;
+      }
+
+      .back-link:hover {
+        transform: translateY(-1px);
+        border-color: rgba(103, 232, 249, 0.4);
+      }
+
+      .title-block {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font: 500 0.72rem 'DM Mono', monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #fbbf24;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 20px;
+        height: 1px;
+        background: rgba(251, 191, 36, 0.72);
+      }
+
+      h1 {
+        font-size: clamp(2rem, 3vw, 3rem);
+        letter-spacing: -0.05em;
+        line-height: 1;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #f97316 72%, #fca5a5 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 24px rgba(251, 191, 36, 0.18);
+      }
+
+      .subtitle {
+        color: var(--muted);
+        font-size: 0.9rem;
+        letter-spacing: 0.04em;
+      }
+
+      .hud {
+        width: min(960px, 100%);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--panel-border);
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.7));
+        backdrop-filter: blur(12px);
+        box-shadow: 0 18px 32px rgba(3, 7, 18, 0.28);
+      }
+
+      .stat-group {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stat {
+        min-width: 96px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid var(--hud-line);
+        background: rgba(15, 23, 42, 0.52);
+      }
+
+      .stat-label {
+        display: block;
+        margin-bottom: 4px;
+        font: 500 0.62rem 'DM Mono', monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .stat-value {
+        font: 700 1.05rem 'DM Mono', monospace;
+        letter-spacing: 0.04em;
+        color: var(--text);
+      }
+
+      .danger-value {
+        color: var(--accent-rose);
+      }
+
+      .warn-value {
+        color: var(--accent);
+      }
+
+      .upgrade-panel {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .upgrade-button {
+        appearance: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: var(--button);
+        color: var(--text);
+        font: 600 0.84rem 'Outfit', sans-serif;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+      }
+
+      .upgrade-button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        border-color: rgba(103, 232, 249, 0.45);
+      }
+
+      .upgrade-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .upgrade-cost {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 46px;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: rgba(251, 191, 36, 0.12);
+        color: #fdd76d;
+        font: 700 0.74rem 'DM Mono', monospace;
+      }
+
+      .game-shell {
+        position: relative;
+        width: min(960px, 100%);
+        height: min(62vw, 620px);
+        min-height: 430px;
+        max-height: 620px;
+        border-radius: 22px;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(8, 12, 20, 0.9);
+        box-shadow: 0 18px 42px rgba(2, 6, 23, 0.6);
+      }
+
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+        background: linear-gradient(180deg, #0b1220 0%, #0d1727 30%, #0b1321 100%);
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(7, 11, 18, 0.46);
+        backdrop-filter: blur(2px);
+      }
+
+      .overlay.hidden {
+        display: none;
+      }
+
+      .panel {
+        width: min(440px, calc(100% - 28px));
+        padding: 28px 20px 20px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 22px;
+        background: rgba(15, 23, 42, 0.92);
+        box-shadow: 0 18px 34px rgba(2, 6, 23, 0.4);
+      }
+
+      .panel-tag {
+        margin-bottom: 8px;
+        font: 700 0.7rem 'DM Mono', monospace;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #fbbf24;
+      }
+
+      .panel h2 {
+        margin-bottom: 12px;
+        font-size: clamp(2rem, 2vw + 1rem, 3rem);
+        letter-spacing: -0.06em;
+        text-transform: uppercase;
+      }
+
+      .panel-copy {
+        color: #d9e2f0;
+        line-height: 1.6;
+      }
+
+      .controls-list {
+        display: grid;
+        gap: 8px;
+        margin: 18px 0 22px;
+        list-style: none;
+      }
+
+      .controls-list li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        color: #dfe9f5;
+        font-size: 0.88rem;
+      }
+
+      .controls-list strong {
+        font-family: 'DM Mono', monospace;
+        color: #f8fafc;
+      }
+
+      .button-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+      }
+
+      .primary-button,
+      .secondary-button {
+        appearance: none;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font: 700 0.92rem 'Outfit', sans-serif;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .primary-button {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: #1a1b1f;
+        box-shadow: 0 12px 28px rgba(245, 158, 11, 0.24);
+      }
+
+      .secondary-button {
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        color: var(--text);
+      }
+
+      .primary-button:hover, .secondary-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        gap: 10px;
+        margin: 18px 0;
+      }
+
+      .stats-grid .mini-stat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.65);
+      }
+
+      .mini-stat span {
+        font: 500 0.7rem 'DM Mono', monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .mini-stat strong {
+        font: 700 0.98rem 'DM Mono', monospace;
+      }
+
+      .panel.notice {
+        max-width: 520px;
+      }
+
+      @media (max-width: 760px) {
+        .game-page {
+          width: min(100vw - 16px, 920px);
+        }
+
+        .topbar {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        .hud {
+          justify-content: center;
+          padding: 10px 12px;
+        }
+
+        .stat-group {
+          justify-content: center;
+        }
+
+        .upgrade-panel {
+          justify-content: center;
+          width: 100%;
+        }
+
+        .game-shell {
+          height: 72vh;
+          min-height: 420px;
+        }
+
+        .controls-list li {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 6px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="game-page">
+      <header class="topbar">
+        <a class="back-link" href="../index.html" aria-label="Back to Arcade Lab">← Games</a>
+        <div class="title-block">
+          <p class="eyebrow">Castle defense</p>
+          <h1>Fortress Defender</h1>
+        </div>
+        <div class="subtitle">Hold the line.</div>
+      </header>
+
+      <section class="hud" aria-live="polite">
+        <div class="stat-group">
+          <div class="stat">
+            <span class="stat-label">Level</span>
+            <span id="level-value" class="stat-value">1</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Wave</span>
+            <span id="wave-value" class="stat-value">1 / 1</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Breach</span>
+            <span id="breach-value" class="stat-value danger-value">0 / 10</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Points</span>
+            <span id="points-value" class="stat-value warn-value">0</span>
+          </div>
+        </div>
+
+        <div class="upgrade-panel" aria-label="upgrade panel">
+          <button id="damage-upgrade" class="upgrade-button" type="button">
+            <span>Attack Power</span>
+            <span id="damage-cost" class="upgrade-cost">10</span>
+          </button>
+          <button id="speed-upgrade" class="upgrade-button" type="button">
+            <span>Attack Speed</span>
+            <span id="speed-cost" class="upgrade-cost">15</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="game-shell" aria-label="Fortress Defender game area">
+        <canvas id="game-canvas" width="960" height="560" tabindex="0" aria-label="Fortress Defender. Survive the enemy waves and defend the fortress."></canvas>
+
+        <div id="menu-overlay" class="overlay" aria-labelledby="menu-title">
+          <div class="panel">
+            <p class="panel-tag">Medieval defense</p>
+            <h2 id="menu-title">Fortress</h2>
+            <p class="panel-copy">The frontier is under siege. Stand on the wall, aim with precision, and defeat each wave before the enemy reaches the gate. Every breach counts. Ten is fatal.</p>
+            <ul class="controls-list">
+              <li><span>Move aim</span><strong>A / D or ← / →</strong></li>
+              <li><span>Fire</span><strong>Space or mouse click</strong></li>
+              <li><span>Upgrade</span><strong>Spend points during combat</strong></li>
+              <li><span>Lose condition</span><strong>10 breaches</strong></li>
+            </ul>
+            <div class="button-row">
+              <button id="start-button" class="primary-button" type="button">Start Game</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="wave-overlay" class="overlay hidden" aria-live="polite">
+          <div class="panel notice">
+            <p class="panel-tag">Wave update</p>
+            <h2 id="wave-banner">Wave 1</h2>
+            <p id="wave-text" class="panel-copy">A new assault is approaching.</p>
+          </div>
+        </div>
+
+        <div id="level-overlay" class="overlay hidden" aria-live="polite">
+          <div class="panel notice">
+            <p class="panel-tag">Level clear</p>
+            <h2>Level complete</h2>
+            <div class="stats-grid">
+              <div class="mini-stat"><span>Kills</span><strong id="level-kills">0</strong></div>
+              <div class="mini-stat"><span>Breaches</span><strong id="level-breaches">0</strong></div>
+              <div class="mini-stat"><span>Level</span><strong id="level-number">1</strong></div>
+              <div class="mini-stat"><span>Points</span><strong id="level-points">0</strong></div>
+            </div>
+            <div class="button-row">
+              <button id="continue-button" class="primary-button" type="button">Continue</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="game-over-overlay" class="overlay hidden" aria-live="polite">
+          <div class="panel notice">
+            <p class="panel-tag">Campaign failed</p>
+            <h2>Fortress fallen</h2>
+            <div class="stats-grid">
+              <div class="mini-stat"><span>Final level</span><strong id="final-level">1</strong></div>
+              <div class="mini-stat"><span>Breaches</span><strong id="final-breaches">10 / 10</strong></div>
+              <div class="mini-stat"><span>Kills</span><strong id="final-kills">0</strong></div>
+              <div class="mini-stat"><span>Points</span><strong id="final-points">0</strong></div>
+            </div>
+            <div class="button-row">
+              <button id="restart-button" class="primary-button" type="button">Restart</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+
+      const ui = {
+        levelValue: document.getElementById('level-value'),
+        waveValue: document.getElementById('wave-value'),
+        breachValue: document.getElementById('breach-value'),
+        pointsValue: document.getElementById('points-value'),
+        damageCost: document.getElementById('damage-cost'),
+        speedCost: document.getElementById('speed-cost'),
+        damageUpgrade: document.getElementById('damage-upgrade'),
+        speedUpgrade: document.getElementById('speed-upgrade'),
+        menuOverlay: document.getElementById('menu-overlay'),
+        waveOverlay: document.getElementById('wave-overlay'),
+        waveBanner: document.getElementById('wave-banner'),
+        waveText: document.getElementById('wave-text'),
+        levelOverlay: document.getElementById('level-overlay'),
+        levelKills: document.getElementById('level-kills'),
+        levelBreaches: document.getElementById('level-breaches'),
+        levelNumber: document.getElementById('level-number'),
+        levelPoints: document.getElementById('level-points'),
+        gameOverOverlay: document.getElementById('game-over-overlay'),
+        finalLevel: document.getElementById('final-level'),
+        finalBreaches: document.getElementById('final-breaches'),
+        finalKills: document.getElementById('final-kills'),
+        finalPoints: document.getElementById('final-points'),
+        startButton: document.getElementById('start-button'),
+        continueButton: document.getElementById('continue-button'),
+        restartButton: document.getElementById('restart-button')
+      };
+
+      const BALANCE = {
+        maxBreaches: 10,
+        projectileSpeed: 700,
+        projectileRadius: 5,
+        player: {
+          aimSpeed: 2.5,
+          baseDamage: 1,
+          baseDelay: 0.5,
+          minDelay: 0.12,
+          archerX: 0.5,
+          archerY: 0.82,
+          shore: 0.84
+        },
+        enemies: {
+          grunt: { label: 'Grunt', health: 24, speed: 58, reward: 3, radius: 16, color: '#6ee7b7' },
+          raider: { label: 'Raider', health: 42, speed: 72, reward: 7, radius: 19, color: '#f9d574' },
+          brute: { label: 'Brute', health: 86, speed: 52, reward: 15, radius: 24, color: '#f87171' }
+        },
+        upgrades: {
+          damage: {
+            baseCost: 10,
+            costMultiplier: 1.65,
+            damageStep: 1
+          },
+          speed: {
+            baseCost: 15,
+            costMultiplier: 1.7,
+            delayStep: 0.05
+          }
+        },
+        waveEnemyCountBase: 3,
+        spawnDelay: 0.9,
+        levelTransition: 1.4,
+        difficultyScale: 0.12
+      };
+
+      const input = {
+        left: false,
+        right: false,
+        firing: false,
+        mouseDown: false,
+        pointerX: 0,
+        pointerY: 0,
+        lastPointerSet: false
+      };
+
+      const game = {
+        state: 'MENU',
+        level: 1,
+        waveNumber: 1,
+        wavePlan: [],
+        spawnQueue: [],
+        totalWaves: 1,
+        enemies: [],
+        projectiles: [],
+        particles: [],
+        points: 0,
+        kills: 0,
+        breaches: 0,
+        levelKills: 0,
+        levelBreaches: 0,
+        runKills: 0,
+        runBreaches: 0,
+        damageLevel: 0,
+        attackSpeedLevel: 0,
+        damageCost: BALANCE.upgrades.damage.baseCost,
+        speedCost: BALANCE.upgrades.speed.baseCost,
+        parentWidth: 960,
+        parentHeight: 560,
+        selectedAngle: 0,
+        transitionTimer: 0,
+        spawnTimer: 0,
+        fireCooldown: 0,
+        arrowDamage: BALANCE.player.baseDamage,
+        fireDelay: BALANCE.player.baseDelay,
+        lastTimestamp: 0,
+        waveAnnouncementVisible: false,
+        waveAnnouncementTimer: 0,
+        pendingNextLevel: false
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function updatePacingFromUpgrades() {
+        game.arrowDamage = BALANCE.player.baseDamage + game.damageLevel;
+        game.fireDelay = Math.max(BALANCE.player.minDelay, BALANCE.player.baseDelay - game.attackSpeedLevel * BALANCE.upgrades.speed.delayStep);
+        game.damageCost = Math.ceil(BALANCE.upgrades.damage.baseCost * Math.pow(BALANCE.upgrades.damage.costMultiplier, game.damageLevel));
+        game.speedCost = Math.ceil(BALANCE.upgrades.speed.baseCost * Math.pow(BALANCE.upgrades.speed.costMultiplier, game.attackSpeedLevel));
+      }
+
+      function wavesForLevel(level) {
+        if (level === 1) return Array(5).fill('grunt');
+        if (level === 2) return Array(8).fill('grunt');
+        if (level === 3) return [...Array(8).fill('grunt'), ...Array(2).fill('raider')];
+        if (level === 4) return [...Array(8).fill('grunt'), ...Array(5).fill('raider')];
+        if (level === 5) return [...Array(8).fill('grunt'), ...Array(5).fill('raider'), ...Array(2).fill('brute')];
+
+        const totalWaves = 15;
+        const pattern = [];
+        for (let i = 0; i < totalWaves; i += 1) {
+          const roll = ((i + 1) * 13 + level * 7) % 100 / 100;
+          if (roll < 0.5) pattern.push('grunt');
+          else if (roll < 0.8) pattern.push('raider');
+          else pattern.push('brute');
+        }
+        return pattern;
+      }
+
+      function enemyCountForWave(level) {
+        return Math.min(5, BALANCE.waveEnemyCountBase + Math.floor((level - 1) / 2));
+      }
+
+      function getDifficultyScale(level) {
+        return 1 + (level - 1) * BALANCE.difficultyScale;
+      }
+
+      function getEnemyHealthForLevel(type, level) {
+        const shotsRequired = 2 * level + 1;
+        const classFactor = { grunt: 1, raider: 1.5, brute: 2.2 };
+        return Math.max(3, Math.ceil(shotsRequired * (classFactor[type] || 1)));
+      }
+
+      function resetRun() {
+        game.state = 'MENU';
+        game.level = 1;
+        game.waveNumber = 1;
+        game.points = 0;
+        game.kills = 0;
+        game.breaches = 0;
+        game.levelKills = 0;
+        game.levelBreaches = 0;
+        game.runKills = 0;
+        game.runBreaches = 0;
+        game.damageLevel = 0;
+        game.attackSpeedLevel = 0;
+        game.wavePlan = wavesForLevel(1);
+        game.totalWaves = game.wavePlan.length;
+        game.enemies = [];
+        game.projectiles = [];
+        game.particles = [];
+        game.transitionTimer = 0;
+        game.spawnTimer = 0;
+        game.fireCooldown = 0;
+        game.selectedAngle = 0;
+        game.pendingNextLevel = false;
+        updatePacingFromUpgrades();
+        updateHUD();
+      }
+
+      function showWaveOverlay(type, label) {
+        ui.waveBanner.textContent = label;
+        ui.waveText.textContent = type === 'grunt'
+          ? 'A line of grunts is rushing the gate.'
+          : type === 'raider'
+            ? 'Raiders have broken formation and are charging the wall.'
+            : 'Brutes are pounding the walls with heavy force.';
+        ui.waveOverlay.classList.remove('hidden');
+        game.waveAnnouncementVisible = true;
+        game.waveAnnouncementTimer = 1.2;
+      }
+
+      function setGameState(nextState) {
+        game.state = nextState;
+      }
+
+      function startLevel(level) {
+        game.level = level;
+        game.wavePlan = wavesForLevel(level);
+        game.totalWaves = game.wavePlan.length;
+        game.waveNumber = 1;
+        game.enemies = [];
+        game.projectiles = [];
+        game.particles = [];
+        game.levelKills = 0;
+        game.levelBreaches = 0;
+        game.spawnQueue = [];
+        game.transitionTimer = BALANCE.levelTransition;
+        game.waveAnnouncementVisible = true;
+        showWaveOverlay(game.wavePlan[0], 'Wave 1');
+        setGameState('WAVE_TRANSITION');
+        updateHUD();
+      }
+
+      function beginWave(index) {
+        const type = game.wavePlan[index];
+        const count = enemyCountForWave(game.level);
+        const queue = [];
+        for (let i = 0; i < count; i += 1) {
+          queue.push(type);
+        }
+        game.spawnQueue = queue;
+        game.spawnTimer = 0.4;
+        setGameState('PLAYING');
+        if (game.waveAnnouncementVisible) {
+          ui.waveOverlay.classList.add('hidden');
+          game.waveAnnouncementVisible = false;
+        }
+      }
+
+      function createEnemy(type, x) {
+        const stats = BALANCE.enemies[type];
+        const difficulty = getDifficultyScale(game.level);
+        const health = getEnemyHealthForLevel(type, game.level) * difficulty;
+        return {
+          id: Math.random().toString(36).slice(2, 11),
+          type,
+          x,
+          y: -30,
+          radius: stats.radius,
+          health,
+          maxHealth: health,
+          speed: stats.speed * difficulty,
+          reward: stats.reward,
+          color: stats.color,
+          dead: false,
+          breached: false,
+          targetX: (game.parentWidth * 0.5) + ((Math.random() - 0.5) * 160),
+          drift: ((Math.random() * 2) - 1) * 14,
+          hitFlash: 0,
+          value: stats.reward
+        };
+      }
+
+      function spawnEnemy() {
+        if (!game.spawnQueue.length || game.state === 'GAME_OVER') return;
+        const type = game.spawnQueue.shift();
+        const x = clamp((Math.random() * 0.56 + 0.22) * game.parentWidth, 90, game.parentWidth - 90);
+        game.enemies.push(createEnemy(type, x));
+      }
+
+      function addParticle(x, y, color, count = 8) {
+        for (let i = 0; i < count; i += 1) {
+          const angle = (Math.PI * 2 * i) / count + Math.random() * 0.8;
+          const speed = 32 + Math.random() * 102;
+          game.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 2 + Math.random() * 4,
+            life: 0.4 + Math.random() * 0.5,
+            maxLife: 0.4 + Math.random() * 0.5,
+            color
+          });
+        }
+      }
+
+      function fireArrow() {
+        if (game.state !== 'PLAYING' || game.fireCooldown > 0 || game.state === 'GAME_OVER') return;
+
+        const angle = game.selectedAngle;
+        const directionX = Math.sin(angle);
+        const directionY = -Math.cos(angle);
+        const archerX = game.parentWidth * 0.5;
+        const archerY = game.parentHeight * 0.78;
+        const startX = archerX + directionX * 32;
+        const startY = archerY + directionY * 18;
+
+        game.projectiles.push({
+          x: startX,
+          y: startY,
+          vx: directionX * BALANCE.projectileSpeed,
+          vy: directionY * BALANCE.projectileSpeed,
+          radius: BALANCE.projectileRadius,
+          damage: game.arrowDamage,
+          life: 1.8
+        });
+
+        game.fireCooldown = game.fireDelay;
+      }
+
+      function purchaseDamageUpgrade() {
+        if (game.state === 'GAME_OVER' || game.points < game.damageCost) return;
+        game.points -= game.damageCost;
+        game.damageLevel += 1;
+        updatePacingFromUpgrades();
+        updateHUD();
+      }
+
+      function purchaseSpeedUpgrade() {
+        if (game.state === 'GAME_OVER' || game.points < game.speedCost) return;
+        game.points -= game.speedCost;
+        game.attackSpeedLevel += 1;
+        updatePacingFromUpgrades();
+        updateHUD();
+      }
+
+      function awardPoints(enemy) {
+        if (enemy.dead || enemy.breached) return;
+        game.points += enemy.reward;
+        game.kills += 1;
+        game.levelKills += 1;
+        game.runKills += 1;
+        enemy.dead = true;
+        addParticle(enemy.x, enemy.y, enemy.color, 14);
+      }
+
+      function triggerBreach(enemy) {
+        if (enemy.dead || enemy.breached) return;
+        enemy.breached = true;
+        enemy.dead = true;
+        game.breaches += 1;
+        game.levelBreaches += 1;
+        game.runBreaches += 1;
+        addParticle(enemy.x, enemy.y, '#f87171', 18);
+        if (game.breaches >= BALANCE.maxBreaches) {
+          endGame();
+        }
+      }
+
+      function endGame() {
+        setGameState('GAME_OVER');
+        game.enemies = [];
+        game.projectiles = [];
+        game.spawnQueue = [];
+        input.left = false;
+        input.right = false;
+        input.firing = false;
+        ui.finalLevel.textContent = String(game.level);
+        ui.finalBreaches.textContent = `${game.breaches} / ${BALANCE.maxBreaches}`;
+        ui.finalKills.textContent = String(game.kills);
+        ui.finalPoints.textContent = String(game.points);
+        ui.gameOverOverlay.classList.remove('hidden');
+      }
+
+      function checkProjectileHits() {
+        for (let i = game.projectiles.length - 1; i >= 0; i -= 1) {
+          const projectile = game.projectiles[i];
+          let hitEnemy = null;
+
+          for (let j = game.enemies.length - 1; j >= 0; j -= 1) {
+            const enemy = game.enemies[j];
+            if (enemy.dead) continue;
+            const dx = enemy.x - projectile.x;
+            const dy = enemy.y - projectile.y;
+            if (dx * dx + dy * dy <= (enemy.radius + projectile.radius) * (enemy.radius + projectile.radius)) {
+              hitEnemy = enemy;
+              break;
+            }
+          }
+
+          if (hitEnemy) {
+            hitEnemy.health -= projectile.damage;
+            hitEnemy.hitFlash = 0.14;
+            game.projectiles.splice(i, 1);
+            addParticle(projectile.x, projectile.y, '#fef3c7', 6);
+
+            if (hitEnemy.health <= 0) {
+              const enemyIndex = game.enemies.findIndex((entity) => entity.id === hitEnemy.id);
+              if (enemyIndex >= 0) {
+                const enemy = game.enemies[enemyIndex];
+                awardPoints(enemy);
+                game.enemies.splice(enemyIndex, 1);
+              }
+            }
+          }
+        }
+      }
+
+      function handleWaveFinished() {
+        if (game.state === 'GAME_OVER') return;
+        if (game.waveNumber >= game.totalWaves) {
+          setGameState('LEVEL_COMPLETE');
+          ui.levelKills.textContent = String(game.levelKills);
+          ui.levelBreaches.textContent = String(game.levelBreaches);
+          ui.levelNumber.textContent = String(game.level);
+          ui.levelPoints.textContent = String(game.points);
+          ui.levelOverlay.classList.remove('hidden');
+          return;
+        }
+
+        game.waveNumber += 1;
+        showWaveOverlay(game.wavePlan[game.waveNumber - 1], `Wave ${game.waveNumber}`);
+        setGameState('WAVE_TRANSITION');
+        game.transitionTimer = BALANCE.levelTransition;
+      }
+
+      function advanceLevel() {
+        ui.levelOverlay.classList.add('hidden');
+        game.level += 1;
+        game.waveNumber = 1;
+        game.levelKills = 0;
+        game.levelBreaches = 0;
+        startLevel(game.level);
+      }
+
+      function updateHUD() {
+        ui.levelValue.textContent = String(game.level);
+        ui.waveValue.textContent = `${game.waveNumber} / ${game.totalWaves}`;
+        ui.breachValue.textContent = `${game.breaches} / ${BALANCE.maxBreaches}`;
+        ui.pointsValue.textContent = String(game.points);
+        ui.damageCost.textContent = String(game.damageCost);
+        ui.speedCost.textContent = String(game.speedCost);
+
+        ui.damageUpgrade.disabled = game.points < game.damageCost || game.state === 'GAME_OVER';
+        ui.speedUpgrade.disabled = game.points < game.speedCost || game.state === 'GAME_OVER';
+      }
+
+      function updateAimFromPointer(x, y) {
+        const centerX = game.parentWidth * 0.5;
+        const centerY = game.parentHeight * 0.85;
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const angle = Math.atan2(dx, -dy);
+        game.selectedAngle = clamp(angle, -1.15, 1.15);
+      }
+
+      function update(dt) {
+        if (game.state === 'MENU') {
+          return;
+        }
+
+        if (game.state === 'WAVE_TRANSITION') {
+          game.transitionTimer -= dt;
+          if (game.transitionTimer <= 0) {
+            ui.waveOverlay.classList.add('hidden');
+            beginWave(game.waveNumber - 1);
+          }
+          return;
+        }
+
+        if (game.state === 'LEVEL_COMPLETE' || game.state === 'GAME_OVER') {
+          return;
+        }
+
+        if (input.left) {
+          game.selectedAngle -= BALANCE.player.aimSpeed * dt;
+        }
+        if (input.right) {
+          game.selectedAngle += BALANCE.player.aimSpeed * dt;
+        }
+        game.selectedAngle = clamp(game.selectedAngle, -1.15, 1.15);
+
+        if (game.fireCooldown > 0) {
+          game.fireCooldown -= dt;
+        }
+
+        if (input.firing && game.state === 'PLAYING') {
+          fireArrow();
+        }
+
+        if (game.waveAnnouncementVisible) {
+          game.waveAnnouncementTimer -= dt;
+          if (game.waveAnnouncementTimer <= 0) {
+            ui.waveOverlay.classList.add('hidden');
+            game.waveAnnouncementVisible = false;
+          }
+        }
+
+        if (game.state === 'PLAYING') {
+          if (game.spawnQueue.length > 0) {
+            game.spawnTimer -= dt;
+            if (game.spawnTimer <= 0) {
+              spawnEnemy();
+              game.spawnTimer = Math.max(0.45, BALANCE.spawnDelay - (game.level - 1) * 0.04);
+            }
+          }
+
+          for (let i = game.enemies.length - 1; i >= 0; i -= 1) {
+            const enemy = game.enemies[i];
+            if (enemy.dead) continue;
+
+            enemy.x += (enemy.targetX - enemy.x) * 0.025 * (enemy.speed * dt * 0.5);
+            enemy.x += Math.sin((performance.now() * 0.005) + enemy.id.length) * 0.18 * enemy.speed * dt;
+            enemy.y += enemy.speed * dt * 0.8;
+
+            if (enemy.hitFlash > 0) {
+              enemy.hitFlash -= dt;
+            }
+
+            if (enemy.y + enemy.radius >= game.parentHeight * 0.82) {
+              triggerBreach(enemy);
+              game.enemies.splice(i, 1);
+              continue;
+            }
+          }
+
+          if (game.spawnQueue.length === 0 && game.enemies.length === 0) {
+            handleWaveFinished();
+          }
+        }
+
+        for (let i = game.projectiles.length - 1; i >= 0; i -= 1) {
+          const projectile = game.projectiles[i];
+          projectile.x += projectile.vx * dt;
+          projectile.y += projectile.vy * dt;
+          projectile.life -= dt;
+
+          if (projectile.x < -20 || projectile.x > game.parentWidth + 20 || projectile.y < -20 || projectile.y > game.parentHeight + 20 || projectile.life <= 0) {
+            game.projectiles.splice(i, 1);
+          }
+        }
+
+        checkProjectileHits();
+
+        for (let i = game.particles.length - 1; i >= 0; i -= 1) {
+          const p = game.particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.life -= dt;
+          if (p.life <= 0) {
+            game.particles.splice(i, 1);
+          }
+        }
+
+        updateHUD();
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        game.parentWidth = rect.width;
+        game.parentHeight = rect.height;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function drawBackground() {
+        const w = game.parentWidth;
+        const h = game.parentHeight;
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#0b1220');
+        grad.addColorStop(0.45, '#132132');
+        grad.addColorStop(1, '#0b1321');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        const hill = ctx.createLinearGradient(0, h * 0.25, 0, h * 0.72);
+        hill.addColorStop(0, 'rgba(73, 89, 112, 0.12)');
+        hill.addColorStop(1, 'rgba(27, 39, 54, 0.75)');
+        ctx.fillStyle = hill;
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.62);
+        ctx.lineTo(w * 0.18, h * 0.36);
+        ctx.lineTo(w * 0.36, h * 0.5);
+        ctx.lineTo(w * 0.6, h * 0.34);
+        ctx.lineTo(w * 0.8, h * 0.54);
+        ctx.lineTo(w, h * 0.46);
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+        ctx.lineWidth = 1;
+        for (let y = h * 0.18; y < h * 0.82; y += 32) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y + 18);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(196, 181, 253, 0.08)';
+        ctx.fillRect(0, h * 0.62, w, h * 0.18);
+      }
+
+      function drawFortress() {
+        const w = game.parentWidth;
+        const h = game.parentHeight;
+        const wallY = h * 0.83;
+        const wallHeight = h * 0.18;
+
+        ctx.fillStyle = '#918b7a';
+        ctx.fillRect(0, wallY, w, wallHeight);
+
+        for (let x = 0; x < w; x += 48) {
+          ctx.fillStyle = '#7d776c';
+          ctx.fillRect(x, wallY + 14, 36, 22);
+          ctx.fillStyle = '#a39d8d';
+          ctx.fillRect(x + 4, wallY + 10, 28, 10);
+        }
+
+        ctx.fillStyle = '#a5adb8';
+        ctx.fillRect(w * 0.43, wallY - 26, w * 0.14, 24);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(w * 0.46, wallY - 32, w * 0.08, 20);
+
+        ctx.fillStyle = '#6b7280';
+        ctx.fillRect(w * 0.45, wallY - 16, w * 0.1, 12);
+
+        ctx.fillStyle = '#d0d0d0';
+        ctx.fillRect(w * 0.5 - 6, wallY - 28, 12, 28);
+
+        ctx.fillStyle = '#d0d0d0';
+        ctx.fillRect(w * 0.5 - 22, wallY + 8, 44, 24);
+      }
+
+      function drawArcher() {
+        const x = game.parentWidth * 0.5;
+        const y = game.parentHeight * 0.78;
+        const angle = game.selectedAngle;
+        const dirX = Math.sin(angle);
+        const dirY = -Math.cos(angle);
+        const frontX = x + dirX * 32;
+        const frontY = y + dirY * 20;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.sin(angle) * 0.18);
+
+        ctx.fillStyle = '#624d1d';
+        ctx.fillRect(-16, 12, 32, 30);
+
+        ctx.fillStyle = '#d8b07a';
+        ctx.beginPath();
+        ctx.arc(0, -18, 13, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#1f2937';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, 10);
+        ctx.lineTo(0, 42);
+        ctx.moveTo(-8, 26);
+        ctx.lineTo(-18, 46);
+        ctx.moveTo(8, 26);
+        ctx.lineTo(18, 46);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#4b5563';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(0, -6);
+        ctx.lineTo(-16, 2);
+        ctx.moveTo(0, -6);
+        ctx.lineTo(18, 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#7c4d1a';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(18, -2, 22, 1.2, 5.1, false);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-8, 0);
+        ctx.lineTo(-30, -18);
+        ctx.lineTo(-30, -34);
+        ctx.moveTo(8, 0);
+        ctx.lineTo(28, -16);
+        ctx.stroke();
+
+        ctx.fillStyle = '#2d3748';
+        ctx.fillRect(-18, -6, 36, 16);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(18, -6, 8, 4);
+        ctx.restore();
+
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.75)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(frontX, frontY);
+        ctx.lineTo(x + dirX * 130, y + dirY * 80);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      function drawEnemy(enemy) {
+        const x = enemy.x;
+        const y = enemy.y;
+        const scale = 1 + (enemy.y / (game.parentHeight * 0.78)) * 0.7;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        if (enemy.type === 'grunt') {
+          ctx.fillStyle = '#1f2937';
+          ctx.fillRect(-12, 10, 24, 18);
+          ctx.fillStyle = enemy.color;
+          ctx.fillRect(-10, -2, 20, 18);
+          ctx.fillStyle = '#dbeafe';
+          ctx.beginPath();
+          ctx.arc(0, -16, 9, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#111827';
+          ctx.fillRect(-12, 28, 5, 16);
+          ctx.fillRect(7, 28, 5, 16);
+          ctx.strokeStyle = '#111827';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-12, 12);
+          ctx.lineTo(-22, 18);
+          ctx.moveTo(12, 12);
+          ctx.lineTo(22, 18);
+          ctx.stroke();
+        } else if (enemy.type === 'raider') {
+          ctx.fillStyle = '#2f2618';
+          ctx.fillRect(-14, 6, 28, 22);
+          ctx.fillStyle = enemy.color;
+          ctx.fillRect(-11, -4, 22, 18);
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.arc(0, -18, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#3a2b18';
+          ctx.fillRect(-18, 18, 8, 18);
+          ctx.fillRect(10, 18, 8, 18);
+          ctx.fillStyle = '#e2b46d';
+          ctx.fillRect(-7, 28, 14, 6);
+          ctx.strokeStyle = '#111827';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-12, 10);
+          ctx.lineTo(-24, 16);
+          ctx.moveTo(12, 10);
+          ctx.lineTo(24, 16);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = '#451a1a';
+          ctx.fillRect(-18, 12, 36, 24);
+          ctx.fillStyle = enemy.color;
+          ctx.fillRect(-16, -2, 32, 22);
+          ctx.fillStyle = '#fef2f2';
+          ctx.beginPath();
+          ctx.arc(0, -18, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#111827';
+          ctx.fillRect(-20, 36, 8, 16);
+          ctx.fillRect(12, 36, 8, 16);
+          ctx.strokeStyle = '#7f1d1d';
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(-18, 10);
+          ctx.lineTo(-28, 16);
+          ctx.moveTo(18, 10);
+          ctx.lineTo(28, 16);
+          ctx.stroke();
+        }
+
+        const hpRatio = clamp(enemy.health / enemy.maxHealth, 0, 1);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        ctx.fillRect(-20, -28, 40, 5);
+        ctx.fillStyle = hpRatio > 0.5 ? '#34d399' : hpRatio > 0.25 ? '#fbbf24' : '#f87171';
+        ctx.fillRect(-20, -28, 40 * hpRatio, 5);
+
+        ctx.restore();
+      }
+
+      function drawProjectiles() {
+        for (const projectile of game.projectiles) {
+          ctx.save();
+          ctx.translate(projectile.x, projectile.y);
+          ctx.rotate(Math.atan2(projectile.vy, projectile.vx));
+
+          ctx.strokeStyle = '#f8fafc';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(-16, 0);
+          ctx.lineTo(12, 0);
+          ctx.stroke();
+
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.moveTo(12, 0);
+          ctx.lineTo(20, -3.2);
+          ctx.lineTo(20, 3.2);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(-6, 0, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+        }
+      }
+
+      function drawParticles() {
+        for (const p of game.particles) {
+          const alpha = clamp(p.life / p.maxLife, 0, 1);
+          if (p.color.startsWith('#')) {
+            const color = p.color;
+            const hex = color.slice(1);
+            const bigint = parseInt(hex, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          } else {
+            ctx.fillStyle = p.color;
+          }
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, game.parentWidth, game.parentHeight);
+        drawBackground();
+        drawFortress();
+        drawArcher();
+        drawProjectiles();
+        for (const enemy of game.enemies) {
+          drawEnemy(enemy);
+        }
+        drawParticles();
+      }
+
+      function animate(timestamp) {
+        if (!game.lastTimestamp) {
+          game.lastTimestamp = timestamp;
+        }
+
+        let dt = (timestamp - game.lastTimestamp) / 1000;
+        if (dt > 0.05) dt = 0.05;
+        game.lastTimestamp = timestamp;
+
+        update(dt);
+        render();
+        requestAnimationFrame(animate);
+      }
+
+      document.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+
+        if ([' ', 'arrowleft', 'arrowright', 'a', 'd'].includes(key) || event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault();
+        }
+
+        if (key === 'a' || event.key === 'ArrowLeft') {
+          input.left = true;
+        }
+        if (key === 'd' || event.key === 'ArrowRight') {
+          input.right = true;
+        }
+        if (key === ' ' && !event.repeat) {
+          input.firing = true;
+          fireArrow();
+        }
+      });
+
+      document.addEventListener('keyup', (event) => {
+        const key = event.key.toLowerCase();
+        if (key === 'a' || event.key === 'ArrowLeft') input.left = false;
+        if (key === 'd' || event.key === 'ArrowRight') input.right = false;
+        if (key === ' ') input.firing = false;
+      });
+
+      canvas.addEventListener('pointerdown', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        input.pointerX = x;
+        input.pointerY = y;
+        input.lastPointerSet = true;
+        input.mouseDown = true;
+        updateAimFromPointer(x, y);
+        if (game.state === 'PLAYING') {
+          input.firing = true;
+          fireArrow();
+        }
+      });
+
+      canvas.addEventListener('pointermove', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        input.pointerX = x;
+        input.pointerY = y;
+        if (game.state === 'PLAYING') {
+          updateAimFromPointer(x, y);
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => {
+        input.mouseDown = false;
+        input.firing = false;
+      });
+
+      canvas.addEventListener('pointerleave', () => {
+        input.mouseDown = false;
+        input.firing = false;
+      });
+
+      ui.startButton.addEventListener('click', () => {
+        resetRun();
+        ui.menuOverlay.classList.add('hidden');
+        ui.gameOverOverlay.classList.add('hidden');
+        startLevel(1);
+      });
+
+      ui.continueButton.addEventListener('click', () => {
+        advanceLevel();
+      });
+
+      ui.restartButton.addEventListener('click', () => {
+        ui.gameOverOverlay.classList.add('hidden');
+        resetRun();
+        ui.menuOverlay.classList.remove('hidden');
+      });
+
+      ui.damageUpgrade.addEventListener('click', purchaseDamageUpgrade);
+      ui.speedUpgrade.addEventListener('click', purchaseSpeedUpgrade);
+
+      window.addEventListener('resize', resizeCanvas);
+      window.addEventListener('blur', () => {
+        input.left = false;
+        input.right = false;
+        input.firing = false;
+      });
+
+      resizeCanvas();
+      resetRun();
+      updateHUD();
+      requestAnimationFrame(animate);
+    </script>
+  </body>
+</html>

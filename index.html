@@ -108,6 +108,7 @@
         .snake { --accent: #34d399; --accent-rgb: 52, 211, 153; }
         .destroyer { --accent: #fb7185; --accent-rgb: 251, 113, 133; }
         .invader { --accent: #fbbf24; --accent-rgb: 251, 191, 36; }
+        .fortress { --accent: #f59e0b; --accent-rgb: 245, 158, 11; }
         .bounce { --accent: #a78bfa; --accent-rgb: 167, 139, 250; }
         .obstacle { --accent: #67e8f9; --accent-rgb: 103, 232, 249; }
         .flappy { --accent: #ffe44d; --accent-rgb: 255, 228, 77; }
@@ -203,7 +204,7 @@
         <section aria-labelledby="collection-title">
             <div class="collection-head">
                 <h2 id="collection-title">Choose your game</h2>
-                <span class="collection-count">01 — 12&nbsp; / &nbsp;ARCADE COLLECTION</span>
+                <span class="collection-count">01 — 13&nbsp; / &nbsp;ARCADE COLLECTION</span>
             </div>
 
             <div class="game-grid">
@@ -269,6 +270,34 @@
                         </svg>
                     </div>
                     <div class="card-info"><div class="card-text"><h3 class="card-title">Block Invader</h3><p class="card-description">The waves keep coming. Move, fire, and hold the line.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
+                </a>
+
+                <a class="game-card fortress" href="fortress-defender/index.html">
+                    <div class="art">
+                        <svg viewBox="0 0 440 170" role="img" aria-label="Illustration of a fortress wall with an archer and incoming enemies">
+                            <defs>
+                                <linearGradient id="stoneGlow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient>
+                                <linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0f172a"/><stop offset="1" stop-color="#111827"/></linearGradient>
+                            </defs>
+                            <rect x="0" y="0" width="440" height="170" fill="url(#nightSky)" opacity=".4"/>
+                            <path d="M12 120c32-14 64-26 105-30 40-5 76 8 110 10 32 2 76 0 104-14 20-10 54-22 89-8v49H12z" fill="rgba(103,232,249,.10)"/>
+                            <path d="M47 95l32-37 25 22 34-39 30 26 36-32 25 26 28-18 43 24 21-20 30 26v44H47z" fill="rgba(148,163,184,.12)"/>
+                            <rect x="54" y="90" width="318" height="36" rx="5" fill="#7c6d5c"/>
+                            <rect x="70" y="80" width="52" height="17" rx="4" fill="#a59682"/>
+                            <rect x="130" y="80" width="52" height="17" rx="4" fill="#a59682"/>
+                            <rect x="190" y="80" width="52" height="17" rx="4" fill="#a59682"/>
+                            <rect x="250" y="80" width="52" height="17" rx="4" fill="#a59682"/>
+                            <rect x="310" y="80" width="52" height="17" rx="4" fill="#a59682"/>
+                            <circle cx="204" cy="111" r="18" fill="#fcd34d" opacity=".18"/>
+                            <circle cx="203" cy="112" r="8" fill="url(#stoneGlow)"/>
+                            <path d="M191 117l-12 19m23-19 12 19m-17-22 1 18" stroke="#fcd34d" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M153 104l-18 36m25-36 8 28m100-28 18 34m-15-34-9 28" stroke="#f8fafc" stroke-width="2" stroke-linecap="round" opacity=".72"/>
+                            <path d="M320 121l18-26 18 26" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M152 124l10-17 12 17" stroke="#f87171" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M58 154h320" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+                        </svg>
+                    </div>
+                    <div class="card-info"><div class="card-text"><h3 class="card-title">Fortress Defender</h3><p class="card-description">Take position on the wall and defend the castle against endless incoming raids.</p></div><span class="play-mark" aria-hidden="true">↗</span></div>
                 </a>
 
                 <a class="game-card bounce" href="bounce-destroyer/index.html">
