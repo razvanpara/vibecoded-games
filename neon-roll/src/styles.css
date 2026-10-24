@@ -202,9 +202,9 @@ button { font: inherit; }
   .stat span { font-size: .48rem; }
   .stat strong { font-size: .75rem; }
   .pause-button { min-width: 62px; border-radius: 10px; font-size: .75rem; }
-  .touch-controls { align-self: center; justify-content: center; margin: 0; }
-  .touch-button { min-width: 67px; min-height: 44px; border-radius: 12px; font-size: .76rem; }
-  .touch-jump { min-width: 84px; }
+  .touch-controls { align-self: center; width: 100%; height: min(100%, clamp(120px, 30svh, 220px)); align-items: stretch; justify-content: stretch; gap: 8px; min-height: 0; margin-block: auto; }
+  .touch-button { flex: 1 1 0; min-width: 0; min-height: 0; height: 100%; border-radius: 12px; font-size: clamp(.8rem, 4vw, 1.1rem); }
+  .touch-jump { min-width: 0; }
   .below-game { display: none; }
   .page-footer { flex-direction: column; gap: 5px; }
 }
@@ -217,6 +217,11 @@ button { font: inherit; }
   .panel { padding: 18px; }
   .controls-list li { font-size: .82rem; }
   .controls-list li strong { font-size: .75rem; }
+}
+
+@media (max-height: 700px) and (pointer: coarse), (max-height: 700px) and (max-width: 720px) {
+  .game-shell { gap: 12px; }
+  .page-footer { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

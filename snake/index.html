@@ -751,14 +751,24 @@
                 margin-top: 4px;
             }
             .dpad-container {
-                margin-block: auto;
-                padding-top: 12px;
+                flex: 1 1 auto;
+                align-self: stretch;
+                width: 100%;
+                margin-block: 0;
+                padding: 12px 0 4px;
+            }
+
+            .dpad-row {
+                flex: 1 1 0;
+                width: 100%;
             }
 
             .dpad-btn,
             .dpad-spacer {
-                width: 130px;
-                height: 130px;
+                flex: 1 1 0;
+                width: auto;
+                height: auto;
+                min-height: 0;
             }
 
             .btn {

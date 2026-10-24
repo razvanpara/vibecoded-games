@@ -422,12 +422,13 @@
             }
             #gameCanvas { max-height: 100%; margin-inline: auto; object-fit: contain; }
             .dpad-container {
-                margin-block: auto;
-                padding-top: 14px;
-                padding-bottom: 4px;
+                flex: 1 1 auto;
+                align-items: center;
+                margin-block: 0;
+                padding: 14px 0 4px;
             }
 
-            .dpad-btn { width: min(86px, 28vw); height: 76px; font-size: 1.7rem; }
+            .dpad-btn { flex: 1 1 0; width: auto; height: clamp(76px, 30svh, 220px); max-height: 100%; font-size: clamp(1.7rem, 8vw, 3rem); }
             .dpad-btn.fire-btn { font-size: 1rem; }
 
             .btn {
@@ -1353,9 +1354,11 @@
         const dpad = gameWrapper.querySelector('.dpad-container');
         function scaleTouchControls(scale) {
             touchControls.forEach(button => {
-                const width = Math.min(86, window.innerWidth * .28);
-                button.style.width = `${width / scale}px`;
-                button.style.height = `${76 / scale}px`;
+                button.style.removeProperty('width');
+                button.style.removeProperty('height');
+                button.style.flex = '1 1 0';
+                button.style.height = `${Math.min(140, window.innerHeight * 0.16) / scale}px`;
+                button.style.maxHeight = '100%';
                 button.style.borderWidth = `${1 / scale}px`;
                 button.style.borderRadius = `${10 / scale}px`;
                 button.style.fontSize = `${(button === dpadFire ? 16 : 27.2) / scale}px`;
@@ -1394,6 +1397,8 @@
                 button.style.removeProperty('gap');
             });
             touchControls.forEach(button => {
+                button.style.removeProperty('flex');
+                button.style.removeProperty('max-height');
                 button.style.removeProperty('width');
                 button.style.removeProperty('height');
                 button.style.removeProperty('border-width');

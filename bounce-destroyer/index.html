@@ -164,12 +164,16 @@
                 object-fit: contain;
             }
             .mobile-controls {
-                flex: 0 0 auto;
-                margin-block: auto;
+                display: flex;
+                flex: 1 1 auto;
+                width: 100%;
+                align-items: center;
+                gap: 8px;
+                margin-top: 14px;
                 padding-top: 14px;
                 padding-bottom: 4px;
             }
-            .mobile-controls button { width: 88px; height: 76px; font-size: 1.7rem; }
+            .mobile-controls button { flex: 1 1 0; width: auto; height: clamp(76px, 16svh, 140px); max-height: 100%; font-size: clamp(1.7rem, 8vw, 3rem); }
             .btn { min-height: 48px; padding: 11px 13px; font-size: .9rem; }
             .primary { min-height: 56px; padding: 13px 28px; }
         }
