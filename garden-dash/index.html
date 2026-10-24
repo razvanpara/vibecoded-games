@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090d16">
+  <meta name="description" content="Sneak through the garden, outwit the dogs, and catch ten mice.">
+  <title>Cat &amp; Mouse: Garden Dash — Arcade Lab</title>
+  <style>
+    :root{color-scheme:dark;--bg:#090d16;--panel:#121b2c;--line:rgba(148,163,184,.18);--text:#f8fafc;--muted:#9aa9bd;--mint:#6ee7b7;--pink:#fb7185}
+    *{box-sizing:border-box}
+    body{min-width:320px;min-height:100vh;margin:0;padding:20px 18px 32px;color:var(--text);background:radial-gradient(ellipse at 50% 0%,rgba(52,211,153,.12),transparent 42rem),var(--bg);font-family:Outfit,system-ui,sans-serif}
+    button{font:inherit}
+    .page{width:min(1080px,100%);margin:auto}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .back,.tool{border:1px solid var(--line);border-radius:999px;background:rgba(17,25,40,.8);color:var(--text);padding:9px 14px;text-decoration:none;font-size:.86rem}
+    .back:hover,.tool:hover{border-color:rgba(110,231,183,.5)}
+    .eyebrow{margin:0 0 4px;color:var(--mint);font:500 .68rem "DM Mono",monospace;letter-spacing:.13em;text-transform:uppercase}
+    h1{margin:0;font-size:clamp(1.55rem,4vw,2.5rem);letter-spacing:-.055em}
+    .intro{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:15px}
+    .intro p:last-child{max-width:440px;margin:0;color:var(--muted);font-size:.9rem;line-height:1.5}
+    .game{position:relative;overflow:hidden;border:1px solid rgba(110,231,183,.22);border-radius:18px;background:#11241c;box-shadow:0 22px 70px #0008,0 0 32px #34d39910}
+    #world{display:block;width:100%;height:min(65vh,660px);min-height:380px;touch-action:none}
+    .hud{position:absolute;z-index:2;top:12px;left:12px;right:12px;display:flex;gap:8px;align-items:stretch;pointer-events:none}
+    .stat{min-width:82px;padding:8px 12px;border:1px solid #ffffff20;border-radius:11px;background:#09111ddd;backdrop-filter:blur(8px)}
+    .stat span{display:block;color:#a9b7c8;font:500 .58rem "DM Mono",monospace;text-transform:uppercase;letter-spacing:.08em}
+    .stat strong{display:block;margin-top:2px;font-size:.96rem}
+    .meter{width:94px;height:5px;margin-top:5px;overflow:hidden;border-radius:9px;background:#ffffff20}
+    .meter i{display:block;width:100%;height:100%;border-radius:inherit;background:var(--mint);transition:width .1s}
+    .hud .spacer{flex:1}
+    .hud button{pointer-events:auto}
+    .hud .tool{align-self:start;padding:8px 13px}
+    .minimap{position:absolute;z-index:2;right:12px;bottom:12px;width:156px;padding:7px;border:1px solid #ffffff2b;border-radius:11px;background:#09111ddd;box-shadow:0 5px 20px #0005}
+    .minimap-label{display:flex;justify-content:space-between;gap:8px;margin:0 2px 5px;color:#a9b7c8;font:500 .53rem "DM Mono",monospace;letter-spacing:.07em}
+    .minimap-label strong{color:#a7f3d0;font-weight:500}
+    #minimap{display:block;width:100%;height:auto;aspect-ratio:180/126;border:1px solid #ffffff18;border-radius:6px}
+    .minimap-opacity{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:5px;margin:5px 2px 0;color:#a9b7c8;font:500 .5rem "DM Mono",monospace}
+    .minimap-opacity input{width:100%;height:14px;margin:0;accent-color:#6ee7b7;cursor:pointer}
+    .minimap-opacity output{min-width:24px;color:#a7f3d0;text-align:right}
+    .overlay{position:absolute;z-index:3;inset:0;display:grid;place-items:center;padding:20px;background:#06100dcc;backdrop-filter:blur(5px)}
+    .overlay[hidden]{display:none}
+    .panel{width:min(430px,100%);padding:25px;border:1px solid #ffffff24;border-radius:18px;background:linear-gradient(145deg,#1b2b38f5,#111925f5);box-shadow:0 25px 80px #0009}
+    .tag{margin:0 0 7px;color:var(--mint);font:500 .67rem "DM Mono",monospace;letter-spacing:.13em;text-transform:uppercase}
+    .panel h2{margin:0;font-size:clamp(1.6rem,6vw,2.35rem);line-height:1.05;letter-spacing:-.05em}
+    .copy{margin:10px 0 16px;color:#b5c1d0;line-height:1.55;font-size:.93rem}
+    .controls{display:grid;grid-template-columns:1fr auto;gap:7px 14px;margin:0 0 18px;padding:13px;border:1px solid #ffffff12;border-radius:12px;background:#07101a70;font-size:.78rem;color:var(--muted)}
+    .controls b{color:#e8eef6;font:500 .7rem "DM Mono",monospace;text-align:right}
+    .actions{display:flex;gap:9px;flex-wrap:wrap}
+    .primary,.secondary{min-height:43px;padding:10px 17px;border:1px solid transparent;border-radius:11px;cursor:pointer;font-weight:700}
+    .primary{background:linear-gradient(110deg,#6ee7b7,#38bdf8);color:#07131a;box-shadow:0 8px 24px #34d3992b}
+    .secondary{border-color:#ffffff22;background:#ffffff0b;color:var(--text)}
+    .primary:hover,.secondary:hover{filter:brightness(1.08)}
+    .touch-controls{display:none;justify-content:space-between;align-items:center;gap:18px;padding:12px 4px 0;user-select:none;-webkit-user-select:none}
+    .pad{display:grid;grid-template:repeat(3,48px)/repeat(3,48px);gap:4px}
+    .touch-btn{display:grid;place-items:center;min-width:48px;min-height:48px;border:1px solid #ffffff23;border-radius:14px;background:linear-gradient(145deg,#1b2938,#101925);color:#eef5fa;box-shadow:0 5px 16px #0005;touch-action:none;-webkit-tap-highlight-color:transparent}
+    .touch-btn:active,.touch-btn.active{border-color:#6ee7b7a0;background:#164333;color:#b7f7db}
+    .pad .up{grid-area:1/2}.pad .left{grid-area:2/1}.pad .down{grid-area:2/2}.pad .right{grid-area:2/3}
+    .actions-touch{display:flex;gap:10px;align-items:center}
+    .actions-touch .touch-btn{min-width:62px;min-height:62px;border-radius:50%;font-size:.72rem;font-weight:700}
+    .below{margin:12px 3px 0;color:#8493a7;font-size:.75rem;line-height:1.5}
+    footer{display:flex;justify-content:space-between;gap:10px;margin-top:22px;padding-top:13px;border-top:1px solid var(--line);color:#76869b;font:400 .65rem "DM Mono",monospace}
+    @media(max-width:640px){
+      body{padding:12px 10px max(14px,env(safe-area-inset-bottom))}
+      .topbar{margin-bottom:12px}
+      .intro{display:block;margin-bottom:10px}
+      .intro p:last-child{margin-top:5px;font-size:.8rem}
+      .game{border-radius:14px}
+      #world{height:min(57svh,590px);min-height:310px}
+      .hud{top:7px;left:7px;right:7px;gap:5px}
+      .stat{min-width:0;padding:6px 8px;border-radius:9px}
+      .stat span{font-size:.49rem}
+      .stat strong{font-size:.79rem}
+      .meter{width:62px}
+      .hud .tool{padding:7px 9px;font-size:.75rem}
+      .minimap{right:7px;bottom:7px;width:112px;padding:5px;border-radius:9px}
+      .minimap-label{font-size:.46rem;margin-bottom:3px}
+      .minimap-opacity{gap:3px;margin-top:3px;font-size:.43rem}
+      .minimap-opacity output{min-width:21px}
+      .touch-controls{display:flex}
+      .pad{grid-template:repeat(3,43px)/repeat(3,43px);gap:3px}
+      .touch-btn{min-width:43px;min-height:43px;border-radius:12px}
+      .actions-touch{gap:7px}
+      .actions-touch .touch-btn{min-width:55px;min-height:55px;font-size:.65rem}
+      .below{margin-top:8px}
+      footer{font-size:.58rem}
+    }
+    @media(max-width:370px){.stat:nth-child(3){display:none}.actions-touch .touch-btn{min-width:48px;min-height:48px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+<main class="page">
+  <header class="topbar">
+    <a class="back" href="../index.html">← Games</a>
+    <button id="new-arena" class="tool" type="button">New arena</button>
+  </header>
+  <section class="intro">
+    <div><p class="eyebrow">Garden stealth &amp; chase</p><h1>CAT &amp; MOUSE: GARDEN DASH</h1></div>
+    <p>Slip past the dogs, hide in the hedges, and catch every mouse. Each new garden brings a bigger chase!</p>
+  </section>
+  <section id="game" class="game" aria-label="Garden Dash game">
+    <canvas id="world" tabindex="0" role="img" aria-label="Garden Dash playfield. Move with WASD or arrow keys; touch controls are below."></canvas>
+    <div class="hud" aria-live="polite">
+      <div class="stat"><span>Mice</span><strong id="mice-count">0 / 10</strong></div>
+      <div class="stat"><span>Dogs</span><strong id="dog-count">5</strong></div>
+      <div class="stat"><span>Time</span><strong id="clock">0:00</strong></div>
+      <div class="stat"><span id="state-label">Cat</span><strong id="cat-state">Ready</strong></div>
+      <div class="stat"><span>Sprint</span><div class="meter"><i id="stamina"></i></div></div>
+      <span class="spacer"></span><button id="pause-button" class="tool" type="button">Pause</button>
+    </div>
+    <div class="minimap" role="group" aria-label="Arena minimap showing the cat, mice, dogs, and obstacles">
+      <div class="minimap-label"><span>ARENA MAP</span><strong id="minimap-level">LEVEL 1</strong></div>
+      <canvas id="minimap" width="180" height="126" aria-hidden="true"></canvas>
+      <label class="minimap-opacity" for="minimap-opacity">
+        <span>Opacity</span>
+        <input id="minimap-opacity" type="range" min="20" max="100" step="5" value="85" aria-label="Minimap opacity">
+        <output id="minimap-opacity-value" for="minimap-opacity">85%</output>
+      </label>
+    </div>
+    <section id="start-screen" class="overlay" aria-labelledby="start-title">
+      <div class="panel">
+        <p class="tag">A little garden, a lot of trouble</p><h2 id="start-title">Cat &amp; Mouse:<br>Garden Dash</h2>
+        <p class="copy">Catch every mouse before the dogs catch you. Bushes hide you, fences can be jumped, and the next level adds more mice and dogs.</p>
+        <div class="controls"><span>Move</span><b>WASD / arrows</b><span>Sprint</span><b>Hold Space</b><span>Jump fence</span><b>Shift / J</b><span>Pause</span><b>Esc / P</b></div>
+        <button id="start-button" class="primary" type="button">Start the chase</button>
+      </div>
+    </section>
+    <section id="pause-screen" class="overlay" hidden aria-labelledby="pause-title">
+      <div class="panel"><p class="tag">Take a breath</p><h2 id="pause-title">Game paused</h2><p class="copy">The whole garden is holding still.</p><div class="actions"><button id="resume-button" class="primary" type="button">Resume</button><button id="restart-run" class="secondary" type="button">New run</button></div></div>
+    </section>
+    <section id="end-screen" class="overlay" hidden aria-labelledby="end-title">
+      <div class="panel"><p id="end-tag" class="tag">Garden cleared</p><h2 id="end-title">You did it!</h2><p id="end-copy" class="copy"></p><div class="actions"><button id="again-button" class="primary" type="button">Next level</button><button id="end-arena" class="secondary" type="button">New run</button></div></div>
+    </section>
+  </section>
+  <div class="touch-controls" aria-label="Touch controls">
+    <div class="pad" aria-label="Direction pad">
+      <button class="touch-btn up" data-dir="up" aria-label="Move up">▲</button><button class="touch-btn left" data-dir="left" aria-label="Move left">◀</button><button class="touch-btn down" data-dir="down" aria-label="Move down">▼</button><button class="touch-btn right" data-dir="right" aria-label="Move right">▶</button>
+    </div>
+    <div class="actions-touch"><button class="touch-btn" data-action="sprint" aria-label="Sprint">DASH</button><button class="touch-btn" data-action="jump" aria-label="Jump">JUMP</button></div>
+  </div>
+  <p class="below">Desktop: WASD / arrows · hold Space to sprint · Shift / J to jump · Esc / P to pause. On mobile, the camera follows your cat through the garden.</p>
+  <footer><span>ARCADE LAB</span><span>GARDEN DASH · KEEP YOUR PAWS QUICK</span></footer>
+</main>
+<script>
+(() => {
+  "use strict";
+  const C = {
+    cols: 40, rows: 28, tile: 40, zoom: 1.5, mice: 10, dogs: 5, catSpeed: 166,
+    catRadius: 12, mouseSpeed: 94, dogSpeed: 82, alertSpeedMultiplier: 1.5, alertSpeedDuration: 1, jumpTime: .58, mouseJumpTime: .85,
+    mouseVision: 245, dogVision: 410, mouseMemory: 1.7, dogMemory: 1.5, fenceBreak: 1.2, mouseFov: Math.PI * .72,
+    dogFov: Math.PI * .82, catSprint: 2, catRecovery: 1,
+    catchRadius: 20, dogCatch: 20
+  };
+  const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
+  const ui = Object.fromEntries(["mice-count","dog-count","clock","cat-state","state-label","stamina","pause-button","start-screen","pause-screen","end-screen","start-button","resume-button","again-button","end-title","end-tag","end-copy","minimap-level"].map(id => [id,document.getElementById(id)]));
+  const keys = new Set(), touch = new Set();
+  const world = {w:C.cols*C.tile,h:C.rows*C.tile};
+  const minimap=document.querySelector("#minimap"),mapCtx=minimap.getContext("2d");
+  const minimapPanel=document.querySelector(".minimap"),minimapOpacity=document.querySelector("#minimap-opacity"),minimapOpacityValue=document.querySelector("#minimap-opacity-value");
+  let grid, walls, fences, bushes, mice, dogs, cat, level=1, levelMice=C.mice, levelDogs=C.dogs, mode="start", elapsed=0, last=0, camera={x:0,y:0}, dpr=1, view={w:960,h:600};
+  let grass=[];
+  const rand=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)];
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const cellAt=(x,y)=>({c:clamp(Math.floor(x/C.tile),0,C.cols-1),r:clamp(Math.floor(y/C.tile),0,C.rows-1)});
+  const key=(c,r)=>r*C.cols+c;
+  const center=(c,r)=>({x:c*C.tile+C.tile/2,y:r*C.tile+C.tile/2});
+
+  function makeArena(){
+    levelMice=C.mice+level-1;levelDogs=C.dogs+level-1;
+    grid=Array.from({length:C.rows},()=>Array(C.cols).fill("open"));
+    walls=[];fences=[];bushes=[];
+    // Short, separated clusters keep routes readable and leave generous open lanes.
+    for(let i=0;i<24;i++){
+      const horizontal=Math.random()<.5, kind=Math.random()<.5?"wall":"fence", length=kind==="fence"?2:2+Math.floor(Math.random()*3), c=2+Math.floor(Math.random()*(C.cols-4)), r=2+Math.floor(Math.random()*(C.rows-4));
+      const cells=Array.from({length},(_,j)=>({c:c+(horizontal?j:0),r:r+(horizontal?0:j)})).filter(p=>p.c<C.cols-2&&p.r<C.rows-2);
+      if(cells.some(p=>grid[p.r][p.c]!=="open"))continue;
+      for(const p of cells)grid[p.r][p.c]=kind;
+      (kind==="wall"?walls:fences).push(...cells.map(p=>({x:p.c*C.tile+5,y:p.r*C.tile+5,w:C.tile-10,h:C.tile-10,c:p.c,r:p.r})));
+    }
+    for(let i=0;i<27;i++){
+      const c=2+Math.floor(Math.random()*(C.cols-4)),r=2+Math.floor(Math.random()*(C.rows-4));
+      if(grid[r][c]==="open"){grid[r][c]="bush";bushes.push({x:c*C.tile+4,y:r*C.tile+4,w:C.tile-8,h:C.tile-8,c,r});}
+    }
+    // Clear a safe starting pocket and guarantee broad connected space.
+    for(let r=1;r<=3;r++)for(let c=1;c<=3;c++){grid[r][c]="open";}
+    walls=walls.filter(o=>grid[o.r][o.c]==="wall");fences=fences.filter(o=>grid[o.r][o.c]==="fence");bushes=bushes.filter(o=>grid[o.r][o.c]==="bush");
+    const free=[];
+    for(let r=1;r<C.rows-1;r++)for(let c=1;c<C.cols-1;c++)if(grid[r][c]==="open"||grid[r][c]==="bush")free.push({c,r});
+    const safe=free.filter(p=>Math.hypot(p.c-2,p.r-2)>4);
+    const shuffled=safe.sort(()=>Math.random()-.5), placements=[];
+    for(const p of shuffled){
+      if(placements.every(q=>Math.hypot(q.c-p.c,q.r-p.r)>=3)){placements.push(p);if(placements.length===levelMice+levelDogs)break;}
+    }
+    for(const p of shuffled){
+      if(placements.length===levelMice+levelDogs)break;
+      if(!placements.includes(p)&&placements.every(q=>Math.hypot(q.c-p.c,q.r-p.r)>=1.5))placements.push(p);
+    }
+    for(const p of shuffled){
+      if(placements.length===levelMice+levelDogs)break;
+      if(!placements.includes(p))placements.push(p);
+    }
+    const points=[center(2,2),...placements.map(p=>center(p.c,p.r))];
+    cat={...points[0],r:C.catRadius,dir:{x:1,y:0},jump:0,sprint:0,recovery:0,hidden:false,anim:0};
+    mice=points.slice(1,1+levelMice).map(p=>({ ...p,r:9,dir:angleDir(rand(0,Math.PI*2)),speed:rand(C.mouseSpeed-6,C.mouseSpeed+8),state:"wander",timer:rand(.2,1.8),sprint:0,sprintCd:rand(0,1),alertBoost:0,alertReady:true,jump:0,anim:rand(0,7)}));
+    dogs=points.slice(1+levelMice,1+levelMice+levelDogs).map(p=>({ ...p,r:14,dir:angleDir(rand(0,Math.PI*2)),speed:rand(75,89),state:"patrol",timer:rand(.3,1.6),route:[],target:null,path:[],pathTimer:0,lostSight:0,alertBoost:0,anim:rand(0,7)}));
+    grass=Array.from({length:520},()=>({x:rand(0,world.w),y:rand(0,world.h),l:rand(3,10),a:rand(.035,.13),angle:rand(-1,1)}));
+    elapsed=0;mode="start";ui["start-screen"].hidden=false;ui["pause-screen"].hidden=true;ui["end-screen"].hidden=true;ui["pause-button"].textContent="Pause";updateHud();
+  }
+  function angleDir(a){return{x:Math.cos(a),y:Math.sin(a)};}
+  function setSize(){
+    const rect=canvas.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);
+    const width=Math.max(1,rect.width),height=Math.max(1,rect.height);
+    canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);view={w:width,h:height};
+  }
+  function setMinimapOpacity(){
+    const opacity=Number(minimapOpacity.value);
+    minimapPanel.style.opacity=String(opacity/100);
+    minimapOpacityValue.value=`${opacity}%`;
+    minimapOpacityValue.textContent=`${opacity}%`;
+    minimapOpacity.setAttribute("aria-valuetext",`${opacity}% opacity`);
+  }
+  function circleRect(x,y,r,o){const px=clamp(x,o.x,o.x+o.w),py=clamp(y,o.y,o.y+o.h);return(x-px)**2+(y-py)**2<r*r;}
+  function blocked(x,y,r,entity,allowFence=false){
+    if(x<r+8||y<r+8||x>world.w-r-8||y>world.h-r-8)return true;
+    if(walls.some(o=>circleRect(x,y,r,o)))return true;
+    const canCross=allowFence||entity.jump>0;
+    if(!canCross&&fences.some(o=>circleRect(x,y,r,o)))return true;
+    return false;
+  }
+  function moveEntity(e,dx,dy,canJump=true){
+    let moved=false;
+    if(e.jump>0&&((dx&&fences.some(o=>circleRect(e.x+dx,e.y,e.r,o)))||(dy&&fences.some(o=>circleRect(e.x,e.y+dy,e.r,o)))))e.jumpingFence=true;
+    if(!blocked(e.x+dx,e.y,e.r,e)){e.x+=dx;moved ||= dx!==0;}
+    else if(canJump&&fences.some(o=>circleRect(e.x+dx,e.y,e.r,o))){e.jump=Math.max(e.jump,e===cat?C.jumpTime:C.mouseJumpTime);if(!blocked(e.x+dx,e.y,e.r,e)){e.x+=dx;moved=true;}}
+    if(!blocked(e.x,e.y+dy,e.r,e)){e.y+=dy;moved ||= dy!==0;}
+    else if(canJump&&fences.some(o=>circleRect(e.x,e.y+dy,e.r,o))){e.jump=Math.max(e.jump,e===cat?C.jumpTime:C.mouseJumpTime);if(!blocked(e.x,e.y+dy,e.r,e)){e.y+=dy;moved=true;}}
+    if(e.jumpingFence&&!fences.some(o=>circleRect(e.x,e.y,e.r,o))){e.justJumped=true;e.jumpingFence=false;}
+    return moved;
+  }
+  function los(a,b){
+    const d=dist(a,b),steps=Math.ceil(d/12);
+    for(let i=1;i<steps;i++){const t=i/steps,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,p=cellAt(x,y);if(grid[p.r][p.c]==="wall")return false;}
+    return true;
+  }
+  function canSee(observer,target,range,fov){
+    const dx=target.x-observer.x,dy=target.y-observer.y,d=Math.hypot(dx,dy);
+    if(d>range||d<1)return false;
+    const dot=(observer.dir.x*dx+observer.dir.y*dy)/d;
+    return dot>=Math.cos(fov/2)&&los(observer,target);
+  }
+  function neighbors(c,r,forDog=true){
+    const out=[];
+    for(const[dc,dr]of[[1,0],[-1,0],[0,1],[0,-1]]){const x=c+dc,y=r+dr;if(x<1||y<1||x>=C.cols-1||y>=C.rows-1)continue;const t=grid[y][x];if(t==="wall"||(forDog&&t==="fence"))continue;out.push({c:x,r:y});}
+    return out;
+  }
+  function pathfind(from,to){
+    const start=cellAt(from.x,from.y),goal=cellAt(to.x,to.y),queue=[start],prev=new Map([[key(start.c,start.r),null]]);let found=null;
+    for(let i=0;i<queue.length;i++){
+      const p=queue[i];if(p.c===goal.c&&p.r===goal.r){found=p;break;}
+      for(const n of neighbors(p.c,p.r,true)){const k=key(n.c,n.r);if(!prev.has(k)){prev.set(k,key(p.c,p.r));queue.push(n);}}
+    }
+    if(!found)return[];
+    const route=[];let k=key(found.c,found.r);
+    while(k!==null){const c=k%C.cols,r=Math.floor(k/C.cols);route.push(center(c,r));k=prev.get(k);}
+    return route.reverse().slice(1);
+  }
+  function patrolWaypoint(d){
+    const start=cellAt(d.x,d.y),queue=[{...start,steps:0}],visited=new Set([key(start.c,start.r)]),candidates=[];
+    for(let i=0;i<queue.length;i++){
+      const current=queue[i];
+      if(current.steps>=4&&current.steps<=9)candidates.push(current);
+      if(current.steps===9)continue;
+      for(const next of neighbors(current.c,current.r,true)){
+        const id=key(next.c,next.r);
+        if(!visited.has(id)){visited.add(id);queue.push({...next,steps:current.steps+1});}
+      }
+    }
+    const options=candidates.length?candidates:queue.filter(p=>p.steps>1);
+    if(!options.length)return center(start.c,start.r);
+    const destination=pick(options);
+    return center(destination.c,destination.r);
+  }
+  function nearestDogEscape(mouse){
+    let best=null,bestScore=-Infinity;
+    for(const dog of dogs){
+      const dogDistance=dist(mouse,dog);
+      if(dogDistance<105||!los(mouse,dog)||dist(dog,cat)<dist(mouse,cat)*.55)continue;
+      const score=dist(dog,cat)-dogDistance*.35;
+      if(score>bestScore){bestScore=score;best=dog;}
+    }
+    return best;
+  }
+  function updateCat(dt){
+    const x=(keys.has("d")||keys.has("arrowright")||touch.has("right")?1:0)-(keys.has("a")||keys.has("arrowleft")||touch.has("left")?1:0);
+    const y=(keys.has("s")||keys.has("arrowdown")||touch.has("down")?1:0)-(keys.has("w")||keys.has("arrowup")||touch.has("up")?1:0),len=Math.hypot(x,y);
+    const sprintHeld=keys.has(" ")||touch.has("sprint");
+    if(sprintHeld&&cat.sprint<=0&&cat.recovery<=0)cat.sprint=C.catSprint;
+    if(cat.sprint>0){cat.sprint=Math.max(0,cat.sprint-dt);if(cat.sprint===0)cat.recovery=C.catRecovery;}
+    else if(cat.recovery>0)cat.recovery=Math.max(0,cat.recovery-dt);
+    const speed=cat.sprint>0?C.catSpeed*2:cat.recovery>0?C.catSpeed*.75:C.catSpeed;
+    cat.justJumped=false;
+    if(len){cat.dir={x:x/len,y:y/len};cat.anim+=dt*12;moveEntity(cat,cat.dir.x*speed*dt,cat.dir.y*speed*dt,false);}
+    else cat.anim+=dt*2;
+    if(cat.jump>0)cat.jump=Math.max(0,cat.jump-dt);
+    if(cat.jump===0)cat.jumpingFence=false;
+    if(cat.justJumped)for(const d of dogs)if(d.state==="chase"){d.state="patrol";d.target=null;d.path=[];d.timer=.5;d.lostSight=C.fenceBreak;}
+    cat.hidden=bushes.some(b=>circleRect(cat.x,cat.y,cat.r*.45,b));
+    if(cat.hidden)for(const d of dogs)if(d.state==="chase"){d.state="patrol";d.target=null;d.path=[];d.timer=.4;}
+    for(const m of [...mice])if(dist(cat,m)<C.catchRadius){mice.splice(mice.indexOf(m),1);if(!mice.length)finish(true);}
+    for(const d of dogs)if(d.state==="chase"&&dist(cat,d)<C.dogCatch)finish(false);
+  }
+  function updateMice(dt){
+    for(const m of mice){
+      m.anim+=dt*10;m.timer-=dt;m.sprintCd=Math.max(0,m.sprintCd-dt);if(m.jump>0)m.jump=Math.max(0,m.jump-dt);
+      const sees=!cat.hidden&&canSee(m,cat,C.mouseVision,C.mouseFov);
+      if(sees){
+        m.state="flee";m.timer=C.mouseMemory;
+        if(m.alertReady){m.alertBoost=C.alertSpeedDuration;m.alertReady=false;}
+        if(m.sprint<=0&&m.sprintCd<=0){m.sprint=1;m.sprintCd=2.5;}
+      }else{
+        if(m.state==="flee"&&m.timer<=0){m.state="wander";m.alertReady=true;}
+      }
+      let target=null;
+      if(m.state==="flee"){
+        let vx=m.x-cat.x,vy=m.y-cat.y,d=Math.hypot(vx,vy)||1;vx/=d;vy/=d;
+        const dogRoute=nearestDogEscape(m);
+        if(dogRoute){const dx=dogRoute.x-m.x,dy=dogRoute.y-m.y,l=Math.hypot(dx,dy)||1;vx=vx*.68+dx/l*.32;vy=vy*.68+dy/l*.32;}
+        target={x:m.x+vx*100,y:m.y+vy*100};
+      }else if(m.timer<=0){m.timer=rand(.7,2.4);m.state="wander";if(Math.random()<.2){m.dir={x:0,y:0};}else m.dir=angleDir(rand(0,Math.PI*2));}
+      if(target){const dx=target.x-m.x,dy=target.y-m.y,l=Math.hypot(dx,dy)||1;m.dir={x:dx/l,y:dy/l};}
+      const sp=m.speed*(m.alertBoost>0?C.alertSpeedMultiplier:m.sprint>0?2.05:1);
+      m.sprint=Math.max(0,m.sprint-dt);m.alertBoost=Math.max(0,m.alertBoost-dt);
+      const moved=moveEntity(m,m.dir.x*sp*dt,m.dir.y*sp*dt,true);
+      if(!moved&&Math.hypot(m.dir.x,m.dir.y)>.1){m.dir=angleDir(rand(0,Math.PI*2));if(m.state==="flee")m.timer=.4;}
+    }
+  }
+  function updateDogs(dt){
+    for(const d of dogs){
+      d.anim+=dt*8;d.timer-=dt;d.pathTimer-=dt;d.lostSight=Math.max(0,d.lostSight-dt);d.alertBoost=Math.max(0,d.alertBoost-dt);
+      const sees=!cat.hidden&&(canSee(d,cat,C.dogVision,C.dogFov)||(dist(d,cat)<105&&los(d,cat)));
+      if(sees&&d.lostSight<=0){
+        if(d.state!=="chase"){d.state="chase";d.pathTimer=0;d.alertBoost=C.alertSpeedDuration;}
+        d.target={x:cat.x,y:cat.y};d.lostSight=C.dogMemory;
+      }
+      if(d.state==="chase"&&!sees){
+        if(d.lostSight===0){d.state="patrol";d.target=null;d.path=[];d.timer=.7;}
+      }
+      if(d.state==="patrol"&&d.target&&dist(d,d.target)<18){d.target=null;d.path=[];d.timer=rand(.15,.55);}
+      if(d.state==="patrol"&&d.timer<=0&&!d.target){
+        d.target=patrolWaypoint(d);d.path=pathfind(d,d.target);d.pathTimer=0;d.timer=rand(.15,.55);
+      }
+      if(d.state==="chase"&&d.pathTimer<=0){if(sees)d.target={x:cat.x,y:cat.y};d.path=pathfind(d,d.target||cat);d.pathTimer=.65;}
+      let goal=d.path.length?d.path[0]:d.target;
+      if(goal){
+        if(dist(d,goal)<14&&d.path.length){d.path.shift();goal=d.path[0]||d.target;}
+        if(goal){let dx=goal.x-d.x,dy=goal.y-d.y,l=Math.hypot(dx,dy)||1;d.dir={x:dx/l,y:dy/l};const speed=(d.state==="chase"?C.dogSpeed*1.48:d.speed)*(d.alertBoost>0?C.alertSpeedMultiplier:1);const moved=moveEntity(d,d.dir.x*speed*dt,d.dir.y*speed*dt,false);if(!moved&&d.state==="patrol"){d.target=null;d.path=[];d.timer=.1;}}
+      }
+      if(d.state==="chase"&&dist(cat,d)<C.dogCatch)finish(false);
+    }
+  }
+  function updateHud(){
+    ui["mice-count"].textContent=`${levelMice-mice.length} / ${levelMice}`;
+    ui["dog-count"].textContent=String(dogs.length);
+    ui["minimap-level"].textContent=`LEVEL ${level}`;
+    ui.clock.textContent=`${Math.floor(elapsed/60)}:${String(Math.floor(elapsed%60)).padStart(2,"0")}`;
+    ui["cat-state"].textContent=cat?.hidden?"Hidden":dogs.some(d=>d.state==="chase")?"Chased":mode==="play"?"Exposed":"Ready";
+    ui["state-label"].textContent=cat?.hidden?"In bush":"Cat";
+    const pct=cat?.sprint>0?cat.sprint/C.catSprint*100:cat?.recovery>0?100-cat.recovery/C.catRecovery*100:100;
+    ui.stamina.style.width=`${pct}%`;ui.stamina.style.background=cat?.recovery>0?"#fbbf24":"#6ee7b7";
+  }
+  function finish(win){
+    if(mode!=="play")return;mode=win?"win":"lose";ui["end-screen"].hidden=false;
+    updateHud();
+    ui["end-tag"].textContent=win?`Level ${level} cleared`:"Paws caught!";
+    ui["end-title"].textContent=win?"You did it!":"The dogs got you";
+    ui["end-copy"].textContent=win?`All ${levelMice} mice caught in ${ui.clock.textContent}. Level ${level+1} brings ${levelMice+1} mice and ${levelDogs+1} dogs.`:"Try ducking into bushes and leaping fences to shake the dogs.";
+    ui["again-button"].textContent=win?"Next level":"Retry level";
+  }
+  function start(){if(mode==="play")return;makeArena();mode="play";ui["start-screen"].hidden=true;ui["end-screen"].hidden=true;canvas.focus();}
+  function startNextLevel(){level++;makeArena();mode="play";ui["start-screen"].hidden=true;canvas.focus();}
+  function startNewRun(){level=1;start();}
+  function pause(){if(mode==="play"){mode="pause";ui["pause-screen"].hidden=false;ui["pause-button"].textContent="Resume";}else if(mode==="pause"){mode="play";ui["pause-screen"].hidden=true;ui["pause-button"].textContent="Pause";}}
+  function draw(){
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,view.w,view.h);
+    const visibleWidth=view.w/C.zoom,visibleHeight=view.h/C.zoom;
+    const sx=clamp(cat.x-visibleWidth/2,0,world.w-visibleWidth),sy=clamp(cat.y-visibleHeight/2,0,world.h-visibleHeight);camera={x:sx,y:sy};
+    ctx.save();ctx.scale(C.zoom,C.zoom);ctx.translate(-sx,-sy);
+    ctx.fillStyle="#315d3d";ctx.fillRect(0,0,world.w,world.h);
+    ctx.fillStyle="#3a7047";ctx.fillRect(8,8,world.w-16,world.h-16);
+    for(const g of grass){ctx.save();ctx.globalAlpha=g.a;ctx.strokeStyle="#c3e6a0";ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(g.x,g.y);ctx.lineTo(g.x+g.angle*3,g.y-g.l);ctx.stroke();ctx.restore();}
+    // Garden path stones add depth without obscuring the navigable grid.
+    ctx.fillStyle="#d4cba239";for(let x=44;x<world.w;x+=168){ctx.beginPath();ctx.ellipse(x,world.h/2+Math.sin(x)*85,18,6,.2,0,Math.PI*2);ctx.fill();}
+    for(const b of bushes)drawBush(b);
+    for(const f of fences)drawFence(f);
+    for(const w of walls)drawWall(w);
+    for(const m of mice)drawMouse(m);
+    for(const d of dogs)drawDog(d);
+    drawCat(cat);
+    ctx.strokeStyle="#a7f3d488";ctx.lineWidth=8;ctx.strokeRect(5,5,world.w-10,world.h-10);
+    ctx.restore();
+    drawMinimap();
+    if(mode==="play"){elapsed+=0;updateHud();}
+  }
+  function drawMinimap(){
+    const w=minimap.width,h=minimap.height,scaleX=w/world.w,scaleY=h/world.h;
+    mapCtx.setTransform(1,0,0,1,0,0);mapCtx.clearRect(0,0,w,h);
+    mapCtx.fillStyle="#315d3d";mapCtx.fillRect(0,0,w,h);
+    mapCtx.fillStyle="#87958a";
+    for(const wall of walls)mapCtx.fillRect(wall.x*scaleX,wall.y*scaleY,wall.w*scaleX,wall.h*scaleY);
+    mapCtx.fillStyle="#c38b54";
+    for(const fence of fences)mapCtx.fillRect(fence.x*scaleX,fence.y*scaleY,fence.w*scaleX,fence.h*scaleY);
+    mapCtx.fillStyle="#328f4e";
+    for(const bush of bushes){mapCtx.beginPath();mapCtx.arc((bush.x+bush.w/2)*scaleX,(bush.y+bush.h/2)*scaleY,Math.max(1.5,bush.w*scaleX*.36),0,Math.PI*2);mapCtx.fill();}
+    for(const mouse of mice){mapCtx.fillStyle="#e3d1cc";mapCtx.beginPath();mapCtx.arc(mouse.x*scaleX,mouse.y*scaleY,1.5,0,Math.PI*2);mapCtx.fill();}
+    for(const dog of dogs){mapCtx.fillStyle=dog.state==="chase"?"#fb7185":"#fbbf24";mapCtx.beginPath();mapCtx.arc(dog.x*scaleX,dog.y*scaleY,2,0,Math.PI*2);mapCtx.fill();}
+    mapCtx.fillStyle="#061017";mapCtx.beginPath();mapCtx.arc(cat.x*scaleX,cat.y*scaleY,4.2,0,Math.PI*2);mapCtx.fill();
+    mapCtx.fillStyle="#6ee7b7";mapCtx.beginPath();mapCtx.arc(cat.x*scaleX,cat.y*scaleY,2.8,0,Math.PI*2);mapCtx.fill();
+  }
+  function ellipseShadow(x,y,rx,ry){ctx.fillStyle="#07100a66";ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill();}
+  function drawBush(b){
+    const x=b.x,y=b.y;ellipseShadow(x+b.w/2,y+b.h*.82,b.w*.58,8);
+    ctx.fillStyle="#154b31";ctx.beginPath();ctx.ellipse(x+b.w/2,y+b.h*.58,b.w*.54,b.h*.42,0,0,Math.PI*2);ctx.fill();
+    for(const [ox,oy,r,col]of[[.2,.44,.34,"#267c45"],[.49,.3,.39,"#328f4e"],[.78,.46,.32,"#236d3e"],[.38,.64,.34,"#2c8248"],[.68,.67,.3,"#1f693a"]]){
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(x+b.w*ox,y+b.h*oy,b.w*r,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#a3e7a02b";ctx.beginPath();ctx.arc(x+b.w*(ox-.08),y+b.h*(oy-.11),b.w*r*.38,0,Math.PI*2);ctx.fill();
+    }
+  }
+  function drawWall(o){
+    ctx.fillStyle="#07100a55";ctx.fillRect(o.x+2,o.y+5,o.w,o.h);
+    const g=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);g.addColorStop(0,"#99a8a0");g.addColorStop(.48,"#64766e");g.addColorStop(1,"#455b52");
+    ctx.fillStyle=g;roundRect(o.x,o.y-3,o.w,o.h,5);ctx.fill();
+    ctx.strokeStyle="#c6d0c53d";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(o.x+3,o.y+o.h*.48);ctx.lineTo(o.x+o.w-3,o.y+o.h*.48);ctx.stroke();
+  }
+  function drawFence(o){
+    ctx.fillStyle="#07100a48";ctx.fillRect(o.x+4,o.y+o.h-5,o.w,o.h*.35);
+    ctx.fillStyle="#7d4b2b";ctx.fillRect(o.x+1,o.y+o.h*.25,o.w-2,5);ctx.fillRect(o.x+1,o.y+o.h*.65,o.w-2,5);
+    for(const x of[o.x+5,o.x+o.w-10]){ctx.fillStyle="#b77940";roundRect(x,o.y+2,6,o.h-4,2);ctx.fill();}
+    ctx.strokeStyle="#e9b47766";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(o.x+2,o.y+o.h*.25);ctx.lineTo(o.x+o.w-2,o.y+o.h*.25);ctx.stroke();
+  }
+  function orientSprite(direction){
+    const angle=Math.atan2(direction.y,direction.x),flip=direction.x<0;
+    ctx.rotate(flip?angle+(angle>0?-Math.PI:Math.PI):angle);
+    ctx.scale(flip?-1:1,1);
+  }
+  function drawCat(a){
+    const bob=Math.sin(a.anim)*1.4;
+    ellipseShadow(a.x,a.y+7,15,8);
+    ctx.save();ctx.translate(a.x,a.y+bob-(a.jump>0?7*Math.sin((1-a.jump/C.jumpTime)*Math.PI):0));orientSprite(a.dir);
+    ctx.strokeStyle="#bf7b42";ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(-8,3);ctx.quadraticCurveTo(-17,-1,-15,-10);ctx.stroke();
+    ctx.fillStyle="#dc985d";ctx.beginPath();ctx.ellipse(-2,1,13,9,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#f0b778";ctx.beginPath();ctx.ellipse(7,-1,9,8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#d98d54";ctx.beginPath();ctx.moveTo(2,-6);ctx.lineTo(3,-15);ctx.lineTo(9,-7);ctx.fill();ctx.beginPath();ctx.moveTo(10,-7);ctx.lineTo(16,-13);ctx.lineTo(17,-3);ctx.fill();
+    ctx.fillStyle="#f3c7a4";ctx.beginPath();ctx.moveTo(4,-7);ctx.lineTo(5,-12);ctx.lineTo(8,-7);ctx.fill();ctx.beginPath();ctx.moveTo(12,-7);ctx.lineTo(15,-10);ctx.lineTo(15,-5);ctx.fill();
+    ctx.fillStyle="#efffb4";ctx.beginPath();ctx.ellipse(9,-2,1.5,2.5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#18281e";ctx.beginPath();ctx.ellipse(9,-2,0.65,1.8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#573c37";ctx.beginPath();ctx.arc(15,1,1.3,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#f7dfc4";ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(14,2);ctx.lineTo(19,1);ctx.moveTo(14,3);ctx.lineTo(19,5);ctx.stroke();
+    for(const x of[-8,5]){ctx.fillStyle="#b97647";roundRect(x,5,4,6+Math.sin(a.anim)*1.5,2);ctx.fill();}
+    ctx.restore();
+    if(a.hidden){ctx.strokeStyle="#a7f3b966";ctx.lineWidth=2;ctx.beginPath();ctx.arc(a.x,a.y,18,0,Math.PI*2);ctx.stroke();}
+    if(a.sprint>0){ctx.strokeStyle="#b6fff388";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x-a.dir.x*17,a.y-a.dir.y*17);ctx.lineTo(a.x-a.dir.x*27,a.y-a.dir.y*27);ctx.stroke();}
+  }
+  function drawMouse(m){
+    const bob=Math.sin(m.anim)*1.1;
+    ellipseShadow(m.x,m.y+6,9,4);
+    ctx.save();ctx.translate(m.x,m.y+bob);orientSprite(m.dir);
+    ctx.strokeStyle="#b98b89";ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-4,2);ctx.quadraticCurveTo(-11,6,-10,9);ctx.stroke();
+    ctx.fillStyle="#b9a5a0";ctx.beginPath();ctx.ellipse(0,0,7,4.5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#d8b6b3";ctx.beginPath();ctx.ellipse(5,-3,3,3,0,0,Math.PI*2);ctx.arc(3,-4,2.1,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#f4d8d0";ctx.beginPath();ctx.arc(4,-5,1.3,0,Math.PI*2);ctx.arc(8,-5,1.2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#25202a";ctx.beginPath();ctx.arc(7,-2,1,0,Math.PI*2);ctx.fill();ctx.fillStyle="#ee7a86";ctx.beginPath();ctx.arc(9,0,1,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+    if(m.state==="flee"){ctx.fillStyle="#fff3b7";ctx.font="bold 11px sans-serif";ctx.fillText("!",m.x+5,m.y-10);}
+  }
+  function drawDog(d){
+    const bob=Math.sin(d.anim)*1.5;
+    ellipseShadow(d.x,d.y+9,18,9);
+    ctx.save();ctx.translate(d.x,d.y+bob);orientSprite(d.dir);
+    ctx.strokeStyle="#aa573b";ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(-10,3);ctx.quadraticCurveTo(-18,6,-17,-1);ctx.stroke();
+    ctx.fillStyle=d.state==="chase"?"#c8754f":"#b66a4d";ctx.beginPath();ctx.ellipse(-2,1,15,10,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#d58a61";ctx.beginPath();ctx.ellipse(8,-2,9,8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#783f3d";ctx.beginPath();ctx.ellipse(5,-8,4,7,-.35,0,Math.PI*2);ctx.ellipse(13,-8,4,7,.35,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#f3d5ba";ctx.beginPath();ctx.ellipse(15,2,4.5,3.5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#23191c";ctx.beginPath();ctx.arc(10,-3,1.4,0,Math.PI*2);ctx.arc(18,1,1.7,0,Math.PI*2);ctx.fill();
+    for(const x of[-9,4]){ctx.fillStyle="#884e3a";roundRect(x,6,5,7+Math.sin(d.anim)*1.5,2);ctx.fill();}
+    ctx.fillStyle="#f6cf6d";ctx.beginPath();ctx.arc(-7,-4,2.3,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+    if(d.state==="chase"){ctx.fillStyle="#fb7185";ctx.font="bold 15px sans-serif";ctx.fillText("!",d.x-4,d.y-20);}
+  }
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
+  function frame(time){
+    const dt=Math.min(.04,(time-last)/1000||0);last=time;
+    if(mode==="play"){elapsed+=dt;updateCat(dt);if(mode==="play")updateMice(dt);if(mode==="play")updateDogs(dt);updateHud();}
+    draw();requestAnimationFrame(frame);
+  }
+  document.addEventListener("keydown",e=>{
+    const k=e.key.toLowerCase();
+    if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
+    if(e.repeat&&(k==="shift"||k==="j"||k==="escape"||k==="p"))return;
+    keys.add(k);
+    if((k==="shift"||k==="j")&&mode==="play"&&cat.jump<=0)cat.jump=C.jumpTime;
+    if(k==="escape"||k==="p"){if(mode==="play"||mode==="pause")pause();}
+  });
+  document.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
+  window.addEventListener("blur",()=>{keys.clear();touch.clear();if(mode==="play")pause();});
+  document.querySelectorAll("[data-dir],[data-action]").forEach(button=>{
+    const id=button.dataset.dir||button.dataset.action;
+    const down=e=>{e.preventDefault();touch.add(id);button.classList.add("active");if(e.isTrusted&&button.setPointerCapture)button.setPointerCapture(e.pointerId);if(id==="jump"&&mode==="play"&&cat.jump<=0)cat.jump=C.jumpTime;};
+    const up=e=>{e.preventDefault();touch.delete(id);button.classList.remove("active");};
+    button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
+    button.addEventListener("contextmenu",e=>e.preventDefault());
+  });
+  ui["start-button"].addEventListener("click",start);
+  ui["resume-button"].addEventListener("click",pause);
+  ui["pause-button"].addEventListener("click",()=>{if(mode==="start"){start();return;}if(mode==="win"||mode==="lose"){makeArena();return;}pause();});
+  ui["again-button"].addEventListener("click",()=>{if(mode==="win")startNextLevel();else start();});
+  document.querySelector("#restart-run").addEventListener("click",startNewRun);
+  document.querySelector("#new-arena").addEventListener("click",()=>{level=1;makeArena();});
+  document.querySelector("#end-arena").addEventListener("click",()=>{level=1;makeArena();});
+  minimapOpacity.addEventListener("input",setMinimapOpacity);
+  setMinimapOpacity();
+  window.addEventListener("resize",setSize,{passive:true});
+  makeArena();setSize();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
