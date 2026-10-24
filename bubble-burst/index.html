@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d16">
+    <meta name="description" content="Tap every bubble before time runs out in this endless arcade challenge.">
+    <title>Bubble Burst — Arcade Lab</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #090d16;
+            color: #f8fafc;
+        }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; min-height: 100%; margin: 0; }
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 12% 8%, rgba(99,102,241,.18), transparent 38rem),
+                radial-gradient(ellipse at 90% 90%, rgba(56,189,248,.12), transparent 34rem),
+                #090d16;
+        }
+        body::before {
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+            background-size: 42px 42px;
+            content: "";
+            pointer-events: none;
+        }
+        .game-shell { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; }
+        .topbar { display: flex; height: 34px; align-items: center; }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 11px;
+            border: 1px solid rgba(148,163,184,.2);
+            border-radius: 8px;
+            background: rgba(30,41,59,.8);
+            color: #e2e8f0;
+            font-size: .85rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .back-link:hover, .back-link:focus-visible { border-color: rgba(129,140,248,.5); background: rgba(99,102,241,.16); color: #c4b5fd; outline: none; }
+        canvas { display: block; width: 100%; height: auto; outline: none; touch-action: none; user-select: none; }
+        @media (pointer: coarse), (max-width: 700px) {
+            .topbar { height: 42px; }
+            .back-link { min-height: 40px; padding: 9px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="game-shell">
+        <header class="topbar"><a class="back-link" href="../index.html">← Games</a></header>
+        <canvas id="game" width="760" height="520" aria-label="Bubble Burst. Tap or click every bubble before the timer runs out."></canvas>
+    </main>
+    <script>
+    (() => {
+        "use strict";
+
+        const BOARD_COLS = 8;
+        const BOARD_ROWS = 8;
+        const BOARD_CELLS = BOARD_COLS * BOARD_ROWS;
+        const CELL_SIZE = 56;
+        const BUBBLE_COLORS = Object.freeze(["#38bdf8", "#a78bfa", "#fb7185", "#34d399", "#fbbf24", "#fb923c"]);
+        const STARTING_FILL = 0.30;
+        const FILL_INCREASE_PER_ROUND = 0.05;
+        const MAX_FILL = 0.80;
+        const TIME_PER_BUBBLE_MS = 700;
+        const TIME_DECREASE_PER_BUBBLE_MS = 50;
+        const MINIMUM_TIME_PER_BUBBLE_MS = 500;
+        const FULL_BOARD_ROUND = Math.ceil((MAX_FILL - STARTING_FILL) / FILL_INCREASE_PER_ROUND) + 1;
+        const FULL_BOARD_GRACE_ROUNDS = 10;
+        const STARTING_LIVES = 3;
+        const POINTS_PER_BUBBLE = 10;
+        const POP_DURATION = 180;
+        const INTRO_DURATION = 300;
+        const POPUP_DURATION = 750;
+        const STORAGE_KEY = "bubbleBurstBestScore";
+        const LANDSCAPE = Object.freeze({ width: 760, height: 520, boardX: 24, boardY: 36 });
+        const PORTRAIT = Object.freeze({ width: 520, height: 760, boardX: 36, boardY: 34 });
+        const BOARD_WIDTH = BOARD_COLS * CELL_SIZE;
+        const BOARD_HEIGHT = BOARD_ROWS * CELL_SIZE;
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+
+        let layout = LANDSCAPE;
+        let boardX = layout.boardX;
+        let boardY = layout.boardY;
+        let bubbles = [];
+        let round = 1;
+        let lives = STARTING_LIVES;
+        let score = 0;
+        let bestScore = readBestScore();
+        let remainingTime = 0;
+        let state = "playing";
+        let stateElapsed = 0;
+        let popupText = "";
+        let popupElapsed = POPUP_DURATION;
+        let popupX = 0;
+        let popupY = 0;
+        let lastFrameTime = 0;
+
+        function readBestScore() {
+            try {
+                return Number(localStorage.getItem(STORAGE_KEY)) || 0;
+            } catch (error) {
+                console.warn("Unable to read the saved best score.", error);
+                return 0;
+            }
+        }
+
+        function saveBestScore() {
+            if (score <= bestScore) return;
+            bestScore = score;
+            try {
+                localStorage.setItem(STORAGE_KEY, String(bestScore));
+            } catch (error) {
+                console.warn("Unable to save the best score.", error);
+            }
+        }
+
+        function roundDuration() {
+            const roundsAfterGrace = Math.max(0, round - FULL_BOARD_ROUND - FULL_BOARD_GRACE_ROUNDS + 1);
+            const timePerBubbleMs = Math.max(
+                MINIMUM_TIME_PER_BUBBLE_MS,
+                TIME_PER_BUBBLE_MS - roundsAfterGrace * TIME_DECREASE_PER_BUBBLE_MS
+            );
+            return Math.ceil(bubbleCount() * timePerBubbleMs / 1000);
+        }
+
+        function bubbleCount() {
+            const fill = Math.min(MAX_FILL, STARTING_FILL + (round - 1) * FILL_INCREASE_PER_ROUND);
+            return Math.round(BOARD_CELLS * fill);
+        }
+
+        function shuffle(items) {
+            for (let index = items.length - 1; index > 0; index--) {
+                const swapIndex = Math.floor(Math.random() * (index + 1));
+                [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+            }
+            return items;
+        }
+
+        function beginRound() {
+            remainingTime = roundDuration();
+            state = "playing";
+            stateElapsed = 0;
+            popupText = "";
+            popupElapsed = POPUP_DURATION;
+
+            const positions = shuffle(Array.from({ length: BOARD_CELLS }, (_, index) => index));
+            const count = bubbleCount();
+            bubbles = positions.slice(0, count).map((position, index) => ({
+                x: position % BOARD_COLS,
+                y: Math.floor(position / BOARD_COLS),
+                color: Math.floor(Math.random() * BUBBLE_COLORS.length),
+                phase: Math.random() * Math.PI * 2,
+                intro: Math.random() * INTRO_DURATION,
+                popElapsed: 0,
+                popping: false,
+                points: POINTS_PER_BUBBLE
+            }));
+        }
+
+        function resizeCanvas() {
+            layout = window.innerWidth < 760 ? PORTRAIT : LANDSCAPE;
+            canvas.width = layout.width;
+            canvas.height = layout.height;
+            boardX = layout.boardX;
+            boardY = layout.boardY;
+
+            const topbarHeight = window.matchMedia("(pointer: coarse), (max-width: 700px)").matches ? 42 : 34;
+            const availableWidth = Math.max(1, window.innerWidth - 32);
+            const availableHeight = Math.max(1, window.innerHeight - topbarHeight - 24);
+            const scale = Math.min(availableWidth / layout.width, availableHeight / layout.height, 1.15);
+            canvas.style.width = `${layout.width * scale}px`;
+            canvas.style.height = `${layout.height * scale}px`;
+            document.querySelector(".game-shell").style.width = `${layout.width * scale}px`;
+            render();
+        }
+
+        function pointerDown(event) {
+            event.preventDefault();
+            if (state !== "playing") return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (event.clientX - rect.left) * canvas.width / rect.width;
+            const y = (event.clientY - rect.top) * canvas.height / rect.height;
+            const col = Math.floor((x - boardX) / CELL_SIZE);
+            const row = Math.floor((y - boardY) / CELL_SIZE);
+            if (col < 0 || col >= BOARD_COLS || row < 0 || row >= BOARD_ROWS) return;
+
+            const bubble = bubbles.find(item => !item.popping && item.x === col && item.y === row);
+            if (!bubble) return;
+            bubble.popping = true;
+            bubble.popElapsed = 0;
+            score += bubble.points;
+            popupText = `+${bubble.points}`;
+            popupElapsed = 0;
+            popupX = boardX + (col + .5) * CELL_SIZE;
+            popupY = boardY + row * CELL_SIZE + CELL_SIZE / 2;
+            saveBestScore();
+        }
+
+        function finishRound() {
+            round++;
+            popupText = "ROUND CLEAR!";
+            popupElapsed = 0;
+            beginRound();
+            popupText = "ROUND CLEAR!";
+            popupElapsed = 0;
+            popupX = boardX + BOARD_WIDTH / 2;
+            popupY = boardY + BOARD_HEIGHT + 22;
+        }
+
+        function missRound() {
+            lives--;
+            stateElapsed = 0;
+            if (lives <= 0) {
+                state = "gameover";
+                bubbles = [];
+                popupText = "GAME OVER";
+                popupElapsed = POPUP_DURATION;
+                return;
+            }
+            state = "miss";
+            bubbles = bubbles.filter(bubble => !bubble.popping);
+            popupText = "TIME'S UP — LIFE LOST";
+            popupElapsed = 0;
+        }
+
+        function restartGame() {
+            round = 1;
+            lives = STARTING_LIVES;
+            score = 0;
+            beginRound();
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = "#090d16";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#0b1220";
+            ctx.fillRect(boardX, boardY, BOARD_WIDTH, BOARD_HEIGHT);
+
+            for (let row = 0; row <= BOARD_ROWS; row++) {
+                ctx.strokeStyle = "rgba(148,163,184,.1)";
+                ctx.beginPath();
+                ctx.moveTo(boardX, boardY + row * CELL_SIZE + .5);
+                ctx.lineTo(boardX + BOARD_WIDTH, boardY + row * CELL_SIZE + .5);
+                ctx.stroke();
+            }
+            for (let col = 0; col <= BOARD_COLS; col++) {
+                ctx.strokeStyle = "rgba(148,163,184,.1)";
+                ctx.beginPath();
+                ctx.moveTo(boardX + col * CELL_SIZE + .5, boardY);
+                ctx.lineTo(boardX + col * CELL_SIZE + .5, boardY + BOARD_HEIGHT);
+                ctx.stroke();
+            }
+        }
+
+        function drawBubble(bubble, now) {
+            const centerX = boardX + (bubble.x + .5) * CELL_SIZE;
+            const centerY = boardY + (bubble.y + .5) * CELL_SIZE;
+            const baseRadius = CELL_SIZE * .34;
+            const pulse = 1 + Math.sin(now / 240 + bubble.phase) * .07;
+            const introScale = Math.min(1, bubble.intro / INTRO_DURATION);
+            const popScale = bubble.popping ? Math.max(0, 1 - bubble.popElapsed / POP_DURATION) : 1;
+            const radius = baseRadius * pulse * introScale * popScale;
+            if (radius <= .5) return;
+
+            const color = BUBBLE_COLORS[bubble.color];
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const shine = ctx.createRadialGradient(centerX - radius * .34, centerY - radius * .4, radius * .03, centerX, centerY, radius);
+            shine.addColorStop(0, "rgba(255,255,255,.75)");
+            shine.addColorStop(.38, "rgba(255,255,255,.18)");
+            shine.addColorStop(1, "rgba(0,0,0,.2)");
+            ctx.fillStyle = shine;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPanel() {
+            const mobile = layout === PORTRAIT;
+            const x = mobile ? 26 : 510;
+            const y = mobile ? 516 : 36;
+            const width = mobile ? 468 : 224;
+            const height = mobile ? 210 : 448;
+
+            ctx.fillStyle = "rgba(20,28,45,.88)";
+            ctx.strokeStyle = "rgba(148,163,184,.2)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(x, y, width, height, 13);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = "#a5b4fc";
+            ctx.font = "800 19px system-ui, sans-serif";
+            ctx.fillText("BUBBLE BURST", x + 18, y + 32);
+
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "11px ui-monospace, SFMono-Regular, Consolas, monospace";
+            ctx.fillText(`ROUND ${round}`, x + 18, y + 59);
+            ctx.fillText(`BUBBLES ${bubbles.filter(bubble => !bubble.popping).length}`, x + (mobile ? 112 : 18), y + (mobile ? 59 : 82));
+
+            const timerY = mobile ? y + 92 : y + 136;
+            const timerX = x + 18;
+            const timerWidth = width - 36;
+            const timerRatio = Math.max(0, remainingTime / roundDuration());
+            ctx.fillStyle = "rgba(148,163,184,.16)";
+            ctx.beginPath();
+            ctx.roundRect(timerX, timerY, timerWidth, 9, 5);
+            ctx.fill();
+            ctx.fillStyle = remainingTime <= 3 ? "#fb7185" : "#34d399";
+            ctx.beginPath();
+            ctx.roundRect(timerX, timerY, timerWidth * timerRatio, 9, 5);
+            ctx.fill();
+
+            ctx.fillStyle = remainingTime <= 3 ? "#fb7185" : "#f8fafc";
+            ctx.font = "800 27px system-ui, sans-serif";
+            ctx.fillText(`${Math.max(0, remainingTime).toFixed(1)}s`, timerX, timerY + 42);
+
+            if (mobile) {
+                ctx.fillStyle = "#94a3b8";
+                ctx.font = "11px ui-monospace, SFMono-Regular, Consolas, monospace";
+                ctx.fillText(`SCORE ${score}`, x + 168, y + 59);
+                ctx.fillText(`BEST ${bestScore}`, x + 304, y + 59);
+                drawLives(x + 18, y + 155, 17);
+                ctx.fillStyle = "#94a3b8";
+                ctx.font = "11px ui-monospace, SFMono-Regular, Consolas, monospace";
+                ctx.fillText("TAP / CLICK EVERY BUBBLE", x + 168, y + 163);
+            } else {
+                ctx.fillStyle = "#94a3b8";
+                ctx.font = "11px ui-monospace, SFMono-Regular, Consolas, monospace";
+                ctx.fillText("SCORE", x + 18, y + 218);
+                ctx.fillText("BEST", x + 18, y + 293);
+                ctx.fillStyle = "#f8fafc";
+                ctx.font = "700 22px system-ui, sans-serif";
+                ctx.fillText(String(score), x + 18, y + 245);
+                ctx.fillText(String(bestScore), x + 18, y + 320);
+                drawLives(x + 18, y + 366, 16);
+                ctx.fillStyle = "#94a3b8";
+                ctx.font = "11px ui-monospace, SFMono-Regular, Consolas, monospace";
+                ctx.fillText("TAP / CLICK EVERY BUBBLE", x + 18, y + 416);
+                ctx.fillText("CLEAR THEM BEFORE TIME RUNS OUT", x + 18, y + 434);
+            }
+        }
+
+        function drawLives(x, y, spacing) {
+            for (let index = 0; index < STARTING_LIVES; index++) {
+                const active = index < lives;
+                ctx.fillStyle = active ? "#fb7185" : "rgba(148,163,184,.24)";
+                ctx.font = "20px system-ui, sans-serif";
+                ctx.fillText("♥", x + index * spacing, y);
+            }
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "11px ui-monospace, SFMono-Regular, Consolas, monospace";
+            ctx.fillText("LIVES", x + spacing * STARTING_LIVES + 4, y - 2);
+        }
+
+        function drawPopup() {
+            if (!popupText || popupElapsed > POPUP_DURATION) return;
+            const alpha = Math.max(0, 1 - popupElapsed / POPUP_DURATION);
+            ctx.textAlign = "center";
+            ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+            ctx.font = "800 20px system-ui, sans-serif";
+            ctx.fillText(popupText, popupX, popupY - popupElapsed * .025);
+            ctx.textAlign = "left";
+        }
+
+        function drawOverlay(title, subtitle) {
+            ctx.fillStyle = "rgba(5,9,18,.8)";
+            ctx.fillRect(boardX, boardY, BOARD_WIDTH, BOARD_HEIGHT);
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = "800 32px system-ui, sans-serif";
+            ctx.fillText(title, boardX + BOARD_WIDTH / 2, boardY + BOARD_HEIGHT / 2 - 8);
+            ctx.fillStyle = "#a5b4fc";
+            ctx.font = "600 13px ui-monospace, SFMono-Regular, Consolas, monospace";
+            ctx.fillText(subtitle, boardX + BOARD_WIDTH / 2, boardY + BOARD_HEIGHT / 2 + 22);
+            ctx.textAlign = "left";
+        }
+
+        function render(now = performance.now()) {
+            drawBackground();
+            for (const bubble of bubbles) drawBubble(bubble, now);
+            drawPanel();
+            drawPopup();
+            if (state === "miss") drawOverlay("TIME'S UP", "GET READY FOR THE NEXT TRY");
+            if (state === "gameover") drawOverlay("GAME OVER", `SCORE ${score}  ·  TAP TO RESTART`);
+        }
+
+        function update(delta) {
+            popupElapsed += delta;
+            if (state === "playing") {
+                remainingTime = Math.max(0, remainingTime - delta / 1000);
+                for (const bubble of bubbles) {
+                    bubble.intro = Math.min(INTRO_DURATION, bubble.intro + delta);
+                    if (bubble.popping) bubble.popElapsed += delta;
+                }
+                bubbles = bubbles.filter(bubble => !bubble.popping || bubble.popElapsed < POP_DURATION);
+
+                if (bubbles.length === 0) finishRound();
+                else if (remainingTime <= 0) missRound();
+            } else if (state === "miss" && stateElapsed >= 900) {
+                beginRound();
+            }
+            stateElapsed += delta;
+        }
+
+        function frame(now) {
+            if (!lastFrameTime) lastFrameTime = now;
+            const delta = Math.min(now - lastFrameTime, 100);
+            lastFrameTime = now;
+            update(delta);
+            render(now);
+            requestAnimationFrame(frame);
+        }
+
+        canvas.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            if (state === "gameover") {
+                restartGame();
+                return;
+            }
+            pointerDown(event);
+        });
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+        beginRound();
+        requestAnimationFrame(frame);
+    })();
+    </script>
+</body>
+</html>
