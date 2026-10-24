@@ -600,6 +600,7 @@
     const BULLET_R = 5;                 // projectile radius
     const BULLET_SPEED = 10;            // px per frame
     const PLAYER_SPEED = 5;             // px per frame
+    const FRAME_DURATION = 1000 / 60;   // reference duration for frame-based speeds
 
     // ── Colour palette for blocks (same family as snake) ──────────────────────
     const BLOCK_GRADIENTS = [
@@ -630,7 +631,7 @@
     // blocks[ row ][ col ] = { alive, gradIdx, hp } ; null if dead
     let blocks = [];
     let player = { x: CW / 2 - PLAYER_W / 2, y: GROUND_Y, shooting: false };
-    let bullets = [];      // { x, y }
+    let bullets = [];      // { x, y, previousY }
     let particles = [];    // explosion FX
     let floaters = [];     // "+1" score floaters
 
@@ -857,7 +858,7 @@
     // ── Bullets ───────────────────────────────────────────────────────────────
     function fireBullet() {
         if (fireCooldown > 0) return;
-        bullets.push({ x: player.x + PLAYER_W / 2, y: player.y });
+        bullets.push({ x: player.x + PLAYER_W / 2, y: player.y, previousY: player.y });
         fireCooldown = 250 / 3; // ms — 3x the previous fire rate
         playSound('shoot');
     }
@@ -1024,8 +1025,10 @@
                     const bw = BW - 4;
                     const bh = BH - 2;
 
+                    const minY = Math.min(b.y, b.previousY) - BULLET_R;
+                    const maxY = Math.max(b.y, b.previousY) + BULLET_R;
                     if (b.x >= bx && b.x <= bx + bw &&
-                        b.y - BULLET_R <= by + bh && b.y + BULLET_R >= by) {
+                        minY <= by + bh && maxY >= by) {
 
                         blk.alive = false;
                         bullets.splice(bi, 1);
@@ -1175,9 +1178,11 @@
     }
 
     function update(dt) {
+        const frameScale = dt / FRAME_DURATION;
+
         // ── Player movement ──
-        if (keys.left)  player.x = Math.max(0, player.x - PLAYER_SPEED);
-        if (keys.right) player.x = Math.min(CW - PLAYER_W, player.x + PLAYER_SPEED);
+        if (keys.left)  player.x = Math.max(0, player.x - PLAYER_SPEED * frameScale);
+        if (keys.right) player.x = Math.min(CW - PLAYER_W, player.x + PLAYER_SPEED * frameScale);
 
         // ── Fire cooldown ──
         if (fireCooldown > 0) fireCooldown = Math.max(0, fireCooldown - dt);
@@ -1189,7 +1194,8 @@
 
         // ── Bullet movement ──
         for (let i = bullets.length - 1; i >= 0; i--) {
-            bullets[i].y -= BULLET_SPEED;
+            bullets[i].previousY = bullets[i].y;
+            bullets[i].y -= BULLET_SPEED * frameScale;
             if (bullets[i].y < -BULLET_R) bullets.splice(i, 1);
         }
 
