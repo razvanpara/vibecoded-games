@@ -49,16 +49,31 @@
         canvas { display: block; width: 100%; height: auto; touch-action: none; outline: none; }
         .mobile-controls { display: none; }
         @media (any-pointer: coarse), (max-width: 900px) {
+            body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: max(8px, env(safe-area-inset-top)) 0 max(8px, env(safe-area-inset-bottom));
+            }
+            .game-shell {
+                display: grid;
+                grid-template-rows: auto auto minmax(0, 1fr);
+            }
             .topbar { height: 44px; }
             .back-link { min-height: 42px; padding: 10px 13px; }
             .mobile-controls {
                 display: grid;
-                grid-template: repeat(2, 38.4px) / repeat(5, minmax(0, 1fr));
+                grid-template: repeat(3, auto) / repeat(5, minmax(0, 1fr));
                 gap: 4.8px;
+                align-self: center;
+                margin-top: 0;
             }
             .mobile-controls button {
                 min-width: 0;
                 min-height: 0;
+                aspect-ratio: 1;
+                padding: 0;
                 border: 1px solid rgba(148,163,184,.3);
                 border-radius: 10px;
                 background: rgba(30,41,59,.9);
@@ -76,11 +91,11 @@
                 outline: 2px solid #a5b4fc;
                 outline-offset: 2px;
             }
-            .mobile-controls .up { grid-row: 1; grid-column: 2; }
-            .mobile-controls .left { grid-row: 2; grid-column: 1; }
-            .mobile-controls .down { grid-row: 2; grid-column: 2; }
-            .mobile-controls .right { grid-row: 2; grid-column: 3; }
-            .mobile-controls .drop { grid-row: 1 / span 2; grid-column: 5; font-size: .8rem; }
+            .mobile-controls .up { grid-row: 1; grid-column: 3; }
+            .mobile-controls .left { grid-row: 2; grid-column: 2; }
+            .mobile-controls .down { grid-row: 2; grid-column: 3; }
+            .mobile-controls .right { grid-row: 2; grid-column: 4; }
+            .mobile-controls .drop { grid-row: 3; grid-column: 3; font-size: .8rem; }
         }
     </style>
 </head>
@@ -189,14 +204,30 @@
         }
 
         function resizeCanvas() {
-            const margin = 16;
             const mobile = window.matchMedia("(any-pointer: coarse), (max-width: 900px)").matches;
             const topbar = mobile ? 44 : 34;
-            const availableWidth = Math.max(1, window.innerWidth - margin * 2);
-            const controlsHeight = mobile ? 81.6 : 0;
+            const availableWidth = Math.max(1, window.innerWidth - 32);
+            const bodyStyle = getComputedStyle(document.body);
+            const verticalPadding = Number.parseFloat(bodyStyle.paddingTop) + Number.parseFloat(bodyStyle.paddingBottom);
             const shellGaps = mobile ? 16 : 8;
-            const availableHeight = Math.max(1, window.innerHeight - topbar - shellGaps - controlsHeight - margin * 2);
-            const scale = Math.min(availableWidth / CANVAS_WIDTH, availableHeight / CANVAS_HEIGHT);
+            const availableHeight = Math.max(1, window.innerHeight - verticalPadding - topbar - shellGaps);
+            let scale = Math.min(availableWidth / CANVAS_WIDTH, availableHeight / CANVAS_HEIGHT);
+            if (mobile) {
+                const controlGap = 4.8;
+                for (let attempt = 0; attempt < 12; attempt++) {
+                    const buttonSize = Math.max(0, (CANVAS_WIDTH * scale - controlGap * 4) / 5);
+                    const controlsHeight = buttonSize * 3 + controlGap * 2;
+                    const nextScale = Math.min(
+                        availableWidth / CANVAS_WIDTH,
+                        Math.max(1, availableHeight - controlsHeight) / CANVAS_HEIGHT
+                    );
+                    if (Math.abs(nextScale - scale) < 0.001) break;
+                    scale = nextScale;
+                }
+                document.querySelector(".game-shell").style.height = `${Math.max(1, window.innerHeight - verticalPadding)}px`;
+            } else {
+                document.querySelector(".game-shell").style.removeProperty("height");
+            }
             canvas.style.width = `${CANVAS_WIDTH * scale}px`;
             canvas.style.height = `${CANVAS_HEIGHT * scale}px`;
             document.querySelector(".game-shell").style.width = `${CANVAS_WIDTH * scale}px`;

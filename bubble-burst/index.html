@@ -51,6 +51,14 @@
         .back-link:hover, .back-link:focus-visible { border-color: rgba(129,140,248,.5); background: rgba(99,102,241,.16); color: #c4b5fd; outline: none; }
         canvas { display: block; width: 100%; height: auto; outline: none; touch-action: none; user-select: none; }
         @media (pointer: coarse), (max-width: 700px) {
+            body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                min-height: 100svh;
+                padding-block: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-bottom));
+            }
             .topbar { height: 42px; }
             .back-link { min-height: 40px; padding: 9px 12px; }
         }
