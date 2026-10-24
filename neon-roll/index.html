@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#090d16" />
+    <meta name="description" content="Roll, jump, and survive the endless neon course." />
+    <title>Neon Roll — Arcade Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="game-page">
+      <header class="topbar">
+        <a class="back-link" href="../index.html" aria-label="Back to Arcade Lab">← Games</a>
+        <button id="mute-toggle" class="toolbar-button" type="button" aria-label="Mute sound" aria-pressed="false">🔊</button>
+      </header>
+
+      <section class="game-shell" aria-labelledby="page-title">
+        <div class="banner">
+          <div class="title-block">
+            <p class="eyebrow">Endless neon runner</p>
+            <h1 id="page-title">NEON ROLL</h1>
+          </div>
+          <p class="subtitle">Build momentum, time your jumps, and survive the hazard grid.</p>
+        </div>
+
+        <div id="game-container" class="game-container">
+          <canvas id="game-canvas" width="960" height="540" tabindex="0" role="img" aria-label="Neon Roll game. Use A and D or the arrow keys to move, and Space to jump."></canvas>
+
+          <div id="hud" class="hud hidden" aria-live="polite">
+            <div class="stat"><span>Distance</span><strong id="distance-value">0 m</strong></div>
+            <div class="stat"><span>Best</span><strong id="best-value">0 m</strong></div>
+            <div class="stat"><span>Energy</span><strong id="energy-value">0</strong></div>
+            <div class="stat tier"><span>Tier</span><strong id="tier-value">1</strong></div>
+            <button id="pause-button" class="pause-button" type="button">Pause</button>
+          </div>
+
+          <section id="start-screen" class="overlay" aria-labelledby="start-title">
+            <div class="panel">
+              <p class="panel-tag">Survive the grid</p>
+              <h2 id="start-title">NEON ROLL</h2>
+              <p class="panel-copy">Keep the neon core moving. Read the course, collect energy, and clear every gap.</p>
+              <ul class="controls-list">
+                <li><span>Accelerate / brake</span><strong>D / A or ← / →</strong></li>
+                <li><span>Jump</span><strong>Space</strong></li>
+                <li><span>Pause / resume</span><strong>P</strong></li>
+                <li><span>Restart</span><strong>R</strong></li>
+              </ul>
+              <button id="play-button" class="primary-button" type="button">Play</button>
+              <div class="meta-row"><span>Best distance</span><strong id="best-start">0 m</strong></div>
+            </div>
+          </section>
+
+          <section id="pause-menu" class="overlay hidden" aria-labelledby="pause-title">
+            <div class="panel small-panel">
+              <p class="panel-tag">Run paused</p>
+              <h2 id="pause-title">Take a breath</h2>
+              <div class="menu-actions">
+                <button id="resume-button" class="primary-button" type="button">Resume</button>
+                <button id="pause-restart-button" class="secondary-button" type="button">Restart</button>
+              </div>
+            </div>
+          </section>
+
+          <section id="game-over" class="overlay hidden" aria-labelledby="game-over-title">
+            <div class="panel small-panel">
+              <p class="panel-tag">Run ended</p>
+              <h2 id="game-over-title">System failure</h2>
+              <p class="final-stats"><span>Distance</span><strong id="final-distance">0 m</strong></p>
+              <p class="final-stats"><span>Energy</span><strong id="final-energy">0</strong></p>
+              <p class="final-stats"><span>Best</span><strong id="final-best">0 m</strong></p>
+              <button id="restart-button" class="primary-button restart-button" type="button">Run it back</button>
+            </div>
+          </section>
+        </div>
+
+        <div id="touch-controls" class="touch-controls hidden" aria-label="Touch controls">
+          <button id="brake-control" class="touch-button" type="button" aria-label="Brake">Brake</button>
+          <button id="jump-control" class="touch-button touch-jump" type="button" aria-label="Jump">Jump</button>
+          <button id="accelerate-control" class="touch-button" type="button" aria-label="Accelerate">Go</button>
+        </div>
+
+        <div class="below-game">
+          <p>Desktop: A / D or arrow keys to steer, Space to jump, P to pause, R to restart. Mobile: use Brake, Jump, and Go.</p>
+        </div>
+      </section>
+      <footer class="page-footer">ARCADE LAB <span>NEON ROLL · BUILT FOR THE LONG RUN</span></footer>
+    </main>
+    <script src="./src/config.js"></script>
+    <script src="./src/main.js"></script>
+  </body>
+</html>
