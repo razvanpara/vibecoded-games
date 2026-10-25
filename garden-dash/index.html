@@ -168,8 +168,8 @@
     <section id="start-screen" class="overlay" aria-labelledby="start-title">
       <div class="panel">
         <p class="tag">A little garden, a lot of trouble</p><h2 id="start-title">Cat &amp; Mouse:<br>Garden Dash</h2>
-        <p class="copy">Catch every mouse before the dogs catch you. Bushes hide you, fences can be jumped, and the next level adds more mice and dogs.</p>
-        <div class="controls"><span>Move</span><b>WASD / arrows</b><span>Sprint</span><b>Hold Space</b><span>Jump fence</span><b>Shift / J</b><span>Pause</span><b>Esc / P</b></div>
+        <p class="copy">Catch every mouse before the dogs catch you. Bushes hide you, and pouncing carries you over fences and past dogs.</p>
+        <div class="controls"><span>Move</span><b>WASD / arrows</b><span>Sprint</span><b>Hold Space</b><span>Pounce</span><b>Shift / J</b><span>Pause</span><b>Esc / P</b></div>
         <button id="start-button" class="primary" type="button">Start the chase</button>
       </div>
     </section>
@@ -185,9 +185,9 @@
       <span id="joystick-stick" class="joystick-stick"></span>
       <span id="joystick-direction" class="visually-hidden" aria-live="polite">Neutral</span>
     </div>
-    <div class="actions-touch"><button class="touch-btn" data-action="sprint" aria-label="Sprint">DASH</button><button class="touch-btn" data-action="jump" aria-label="Jump">JUMP</button></div>
+    <div class="actions-touch"><button class="touch-btn" data-action="sprint" aria-label="Sprint">DASH</button><button class="touch-btn" data-action="jump" aria-label="Pounce">POUNCE</button></div>
   </div>
-  <p class="below">Desktop: WASD / arrows · hold Space to sprint · Shift / J to jump · Esc / P to pause. On mobile, drag the joystick to move in eight directions; use Dash and Jump separately.</p>
+  <p class="below">Desktop: WASD / arrows · hold Space to sprint · Shift / J to pounce · Esc / P to pause. On mobile, drag the joystick to move in eight directions; use Dash and Pounce separately.</p>
   <footer><span>ARCADE LAB</span><span>GARDEN DASH · KEEP YOUR PAWS QUICK</span></footer>
 </main>
 <script>
@@ -195,7 +195,7 @@
   "use strict";
   const C = {
     cols: 40, rows: 28, tile: 40, zoom: window.matchMedia("(max-width: 640px)").matches ? .75 : 1.5, mice: 10, dogs: 5, catSpeed: 166,
-    catRadius: 12, mouseSpeed: 94, dogSpeed: 82, alertSpeedMultiplier: 1.5, alertSpeedDuration: 1, jumpTime: .58, mouseJumpTime: .85,
+    catRadius: 12, mouseSpeed: 94, dogSpeed: 82, alertSpeedMultiplier: 1.5, alertSpeedDuration: 1, jumpTime: .58, pounceDistance: 150, mouseJumpTime: .85,
     mouseVision: 245, dogVision: 410, mouseMemory: 1.7, dogMemory: 1.5, fenceBreak: 1.2, mouseFov: Math.PI * .72,
     dogFov: Math.PI * .82, catSprint: 2, catRecovery: 1,
     catchRadius: 20, dogCatch: 20
@@ -260,7 +260,7 @@
       if(!placements.includes(p))placements.push(p);
     }
     const points=[center(2,2),...placements.map(p=>center(p.c,p.r))];
-    cat={...points[0],r:C.catRadius,dir:{x:1,y:0},jump:0,sprint:0,recovery:0,hidden:false,anim:0};
+    cat={...points[0],r:C.catRadius,dir:{x:1,y:0},jump:0,pounceRemaining:0,sprint:0,recovery:0,hidden:false,anim:0};
     mice=points.slice(1,1+levelMice).map(p=>({ ...p,r:9,dir:angleDir(rand(0,Math.PI*2)),speed:rand(C.mouseSpeed-6,C.mouseSpeed+8),state:"wander",timer:rand(.2,1.8),sprint:0,sprintCd:rand(0,1),alertBoost:0,alertReady:true,jump:0,anim:rand(0,7)}));
     dogs=points.slice(1+levelMice,1+levelMice+levelDogs).map(p=>({ ...p,r:14,dir:angleDir(rand(0,Math.PI*2)),speed:rand(75,89),state:"patrol",timer:rand(.3,1.6),route:[],target:null,path:[],pathTimer:0,lostSight:0,alertBoost:0,anim:rand(0,7)}));
     grass=Array.from({length:520},()=>({x:rand(0,world.w),y:rand(0,world.h),l:rand(3,10),a:rand(.035,.13),angle:rand(-1,1)}));
@@ -311,7 +311,7 @@
   function circleRect(x,y,r,o){const px=clamp(x,o.x,o.x+o.w),py=clamp(y,o.y,o.y+o.h);return(x-px)**2+(y-py)**2<r*r;}
   function blocked(x,y,r,entity,allowFence=false){
     if(x<r+8||y<r+8||x>world.w-r-8||y>world.h-r-8)return true;
-    if(walls.some(o=>circleRect(x,y,r,o)))return true;
+    if(!mice.includes(entity)&&walls.some(o=>circleRect(x,y,r,o)))return true;
     const canCross=allowFence||entity.jump>0;
     if(!canCross&&fences.some(o=>circleRect(x,y,r,o)))return true;
     return false;
@@ -379,24 +379,38 @@
     }
     return best;
   }
-  function updateCat(dt){
+  function inputDirection(){
     const x=(keys.has("d")||keys.has("arrowright")||touch.has("right")?1:0)-(keys.has("a")||keys.has("arrowleft")||touch.has("left")?1:0);
     const y=(keys.has("s")||keys.has("arrowdown")||touch.has("down")?1:0)-(keys.has("w")||keys.has("arrowup")||touch.has("up")?1:0),len=Math.hypot(x,y);
+    return len?{x:x/len,y:y/len}:null;
+  }
+  function startPounce(){
+    if(mode!=="play"||cat.jump>0)return;
+    const direction=inputDirection();
+    if(direction)cat.dir=direction;
+    cat.jump=C.jumpTime;cat.pounceRemaining=C.pounceDistance;
+  }
+  function updateCat(dt){
+    const direction=inputDirection();
     const sprintHeld=keys.has(" ")||touch.has("sprint");
     if(sprintHeld&&cat.sprint<=0&&cat.recovery<=0)cat.sprint=C.catSprint;
     if(cat.sprint>0){cat.sprint=Math.max(0,cat.sprint-dt);if(cat.sprint===0)cat.recovery=C.catRecovery;}
     else if(cat.recovery>0)cat.recovery=Math.max(0,cat.recovery-dt);
     const speed=cat.sprint>0?C.catSpeed*2:cat.recovery>0?C.catSpeed*.75:C.catSpeed;
     cat.justJumped=false;
-    if(len){cat.dir={x:x/len,y:y/len};cat.anim+=dt*12;moveEntity(cat,cat.dir.x*speed*dt,cat.dir.y*speed*dt,false);}
+    if(cat.pounceRemaining>0){
+      const step=Math.min(cat.pounceRemaining,C.pounceDistance*dt/C.jumpTime);
+      moveEntity(cat,cat.dir.x*step,cat.dir.y*step,false);
+      cat.pounceRemaining=Math.max(0,cat.pounceRemaining-step);cat.anim+=dt*16;
+    }else if(direction){cat.dir=direction;cat.anim+=dt*12;moveEntity(cat,cat.dir.x*speed*dt,cat.dir.y*speed*dt,false);}
     else cat.anim+=dt*2;
     if(cat.jump>0)cat.jump=Math.max(0,cat.jump-dt);
-    if(cat.jump===0)cat.jumpingFence=false;
+    if(cat.jump===0){cat.jumpingFence=false;cat.pounceRemaining=0;}
     if(cat.justJumped)for(const d of dogs)if(d.state==="chase"){d.state="patrol";d.target=null;d.path=[];d.timer=.5;d.lostSight=C.fenceBreak;}
     cat.hidden=bushes.some(b=>circleRect(cat.x,cat.y,cat.r*.45,b));
     if(cat.hidden)for(const d of dogs)if(d.state==="chase"){d.state="patrol";d.target=null;d.path=[];d.timer=.4;}
     for(const m of [...mice])if(dist(cat,m)<C.catchRadius){mice.splice(mice.indexOf(m),1);if(!mice.length)finish(true);}
-    for(const d of dogs)if(d.state==="chase"&&dist(cat,d)<C.dogCatch)finish(false);
+    for(const d of dogs)if(cat.jump<=0&&d.state==="chase"&&dist(cat,d)<C.dogCatch)finish(false);
   }
   function updateMice(dt){
     for(const m of mice){
@@ -444,7 +458,7 @@
         if(dist(d,goal)<14&&d.path.length){d.path.shift();goal=d.path[0]||d.target;}
         if(goal){let dx=goal.x-d.x,dy=goal.y-d.y,l=Math.hypot(dx,dy)||1;d.dir={x:dx/l,y:dy/l};const speed=(d.state==="chase"?C.dogSpeed*1.48:d.speed)*(d.alertBoost>0?C.alertSpeedMultiplier:1);const moved=moveEntity(d,d.dir.x*speed*dt,d.dir.y*speed*dt,false);if(!moved&&d.state==="patrol"){d.target=null;d.path=[];d.timer=.1;}}
       }
-      if(d.state==="chase"&&dist(cat,d)<C.dogCatch)finish(false);
+      if(cat.jump<=0&&d.state==="chase"&&dist(cat,d)<C.dogCatch)finish(false);
     }
   }
   function updateHud(){
@@ -462,7 +476,7 @@
     updateHud();
     ui["end-tag"].textContent=win?`Level ${level} cleared`:"Paws caught!";
     ui["end-title"].textContent=win?"You did it!":"The dogs got you";
-    ui["end-copy"].textContent=win?`All ${levelMice} mice caught in ${ui.clock.textContent}. Level ${level+1} brings ${levelMice+1} mice and ${levelDogs+1} dogs.`:"Try ducking into bushes and leaping fences to shake the dogs.";
+    ui["end-copy"].textContent=win?`All ${levelMice} mice caught in ${ui.clock.textContent}. Level ${level+1} brings ${levelMice+1} mice and ${levelDogs+1} dogs.`:"Try ducking into bushes and pouncing over fences to shake the dogs.";
     ui["again-button"].textContent=win?"Next level":"Retry level";
   }
   function start(){if(mode==="play")return;makeArena();mode="play";ui["start-screen"].hidden=true;ui["end-screen"].hidden=true;canvas.focus();}
@@ -586,7 +600,7 @@
     if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
     if(e.repeat&&(k==="shift"||k==="j"||k==="escape"||k==="p"))return;
     keys.add(k);
-    if((k==="shift"||k==="j")&&mode==="play"&&cat.jump<=0)cat.jump=C.jumpTime;
+    if(k==="shift"||k==="j")startPounce();
     if(k==="escape"||k==="p"){if(mode==="play"||mode==="pause")pause();}
   });
   document.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
@@ -612,7 +626,7 @@
   joystick.addEventListener("contextmenu",e=>e.preventDefault());
   document.querySelectorAll("[data-action]").forEach(button=>{
     const id=button.dataset.action;
-    const down=e=>{e.preventDefault();touch.add(id);button.classList.add("active");if(e.isTrusted&&button.setPointerCapture)button.setPointerCapture(e.pointerId);if(id==="jump"&&mode==="play"&&cat.jump<=0)cat.jump=C.jumpTime;};
+    const down=e=>{e.preventDefault();touch.add(id);button.classList.add("active");if(e.isTrusted&&button.setPointerCapture)button.setPointerCapture(e.pointerId);if(id==="jump")startPounce();};
     const up=e=>{e.preventDefault();touch.delete(id);button.classList.remove("active");};
     button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
     button.addEventListener("contextmenu",e=>e.preventDefault());
