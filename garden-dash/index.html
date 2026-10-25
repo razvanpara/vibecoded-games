@@ -91,6 +91,43 @@
       footer{font-size:.58rem}
     }
     @media(max-width:370px){.stat:nth-child(3){display:none}.actions-touch .touch-btn{min-width:48px;min-height:48px}}
+    @media(orientation:landscape) and (max-height:560px){
+      body{padding:7px 12px 10px}
+      .topbar{margin-bottom:6px}
+      .intro{display:flex;align-items:center;margin-bottom:7px}
+      .intro p:last-child{display:none}
+      .game{border-radius:12px}
+      #world{height:min(50svh,340px);min-height:180px}
+      .below,footer{display:none}
+    }
+    @media(orientation:landscape) and (max-height:560px) and (pointer:coarse){
+      body{overflow:hidden}
+      .topbar,.intro{display:none}
+      .game{position:fixed;z-index:1;inset:0;width:60vw;height:100svh;margin:0 auto}
+      #world{height:100%;min-height:0}
+      .minimap{right:6px;bottom:6px;width:82px;padding:4px;border-radius:7px}
+      .minimap-label{gap:3px;margin:0 1px 3px;font-size:.36rem;letter-spacing:.03em}
+      .minimap-control{gap:2px;margin:3px 1px 0;font-size:.36rem}
+      .minimap-control output{min-width:16px}
+      .minimap-control input{height:10px}
+      .hud{position:fixed;inset:8px 8px auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(3,auto);gap:5px 8px;align-items:start}
+      .hud .stat{width:100%;max-width:min(18vw,150px);min-width:0;padding:6px 8px}
+      .hud .stat:nth-child(1){grid-column:1;grid-row:1}
+      .hud .stat:nth-child(2){grid-column:1;grid-row:2}
+      .hud .stat:nth-child(3){grid-column:1;grid-row:3}
+      .hud .stat:nth-child(4){grid-column:2;grid-row:1;justify-self:end}
+      .hud .stat:nth-child(5){grid-column:2;grid-row:2;justify-self:end}
+      .hud .stat span{font-size:.54rem}
+      .hud .stat strong{font-size:.84rem}
+      .hud .meter{width:100%;max-width:112px}
+      .hud .spacer{display:none}
+      .hud #pause-button{grid-column:2;grid-row:3;justify-self:end;padding:6px 10px;font-size:.72rem}
+      .touch-controls{position:fixed;z-index:5;inset:0;display:block;padding:0;pointer-events:none}
+      .joystick{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:max(12px,env(safe-area-inset-left));width:min(36svh,180px);height:min(36svh,180px);min-width:112px;min-height:112px;transform:none;pointer-events:auto}
+      .joystick-stick{width:56px;height:56px}
+      .actions-touch{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;pointer-events:auto}
+      .actions-touch .touch-btn{width:min(22svh,88px);height:min(22svh,88px);min-width:60px;min-height:60px;padding:0;border-radius:12px;font-size:.76rem}
+    }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
 </head>
