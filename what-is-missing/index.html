@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#fff8eb">
+    <meta name="description" content="A gentle picture puzzle game for little learners. Find the missing piece!">
+    <title>What Is Missing? — Arcade Lab</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <main class="app">
+        <header class="topbar">
+            <a class="back-link" href="../index.html" aria-label="Back to Arcade Lab">← Games</a>
+            <div class="brand"><span class="brand-mark" aria-hidden="true">✿</span><span>WHAT IS MISSING?</span></div>
+            <div class="controls">
+                <button id="home-button" class="icon-button" type="button" aria-label="Go to home screen" title="Home">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1V10Z"/></svg>
+                </button>
+                <button id="voice-button" class="icon-button voice-button" type="button" aria-label="Voice off" aria-pressed="false" title="Voice off">
+                    <svg class="voice-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18a5 5 0 0 0 5-5V8a5 5 0 0 0-10 0v5a5 5 0 0 0 5 5Zm-8-5a8 8 0 0 0 16 0m-8 8v-3m-4 3h8"/></svg>
+                    <svg class="voice-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18a5 5 0 0 0 5-5V8a5 5 0 0 0-10 0v5a5 5 0 0 0 5 5Zm-8-5a8 8 0 0 0 16 0m-8 8v-3m-4 3h8M4 4l16 16"/></svg>
+                </button>
+                <button id="sound-button" class="icon-button sound-button" type="button" aria-label="Sound on" aria-pressed="false" title="Sound on">
+                    <svg class="sound-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Zm12-.5a4 4 0 0 1 0 5m2.5-7.5a7.5 7.5 0 0 1 0 10"/></svg>
+                    <svg class="sound-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Zm12 1 5 5m0-5-5 5"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <section id="game-screen" class="game-screen" hidden aria-label="What is missing puzzle">
+            <div class="game-heading">
+                <div>
+                    <p class="eyebrow">Look · listen · find</p>
+                    <h1>What is missing?</h1>
+                </div>
+                <div class="round-count" aria-live="polite"><span aria-hidden="true">✦</span><strong id="round-count">0</strong></div>
+            </div>
+            <section class="puzzle-panel">
+                <div id="prompt" class="prompt" aria-live="polite">Can you find the missing piece?</div>
+                <div id="picture" class="picture" aria-label="Picture with a missing piece"></div>
+                <div id="feedback" class="feedback" aria-live="polite">Tap a piece to help!</div>
+            </section>
+            <div id="choices" class="choices" role="group" aria-label="Choose the missing piece"></div>
+        </section>
+
+        <section id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
+            <div class="welcome-spark spark-one" aria-hidden="true">✦</div>
+            <div class="welcome-spark spark-two" aria-hidden="true">✿</div>
+            <div id="welcome-art" class="welcome-art" aria-hidden="true"></div>
+            <p class="eyebrow">A little picture puzzle</p>
+            <h1 id="welcome-title">What is<br>missing?</h1>
+            <button id="play-button" class="play-button" type="button"><span aria-hidden="true">▶</span> Play</button>
+        </section>
+
+        <div id="celebration" class="celebration" aria-hidden="true"></div>
+    </main>
+    <script src="./src/data.js"></script>
+    <script src="./src/art.js"></script>
+    <script src="./src/rounds.js"></script>
+    <script src="./src/main.js"></script>
+</body>
+</html>
