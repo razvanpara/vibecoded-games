@@ -25,6 +25,7 @@
     .stat{min-width:82px;padding:8px 12px;border:1px solid #ffffff20;border-radius:11px;background:#09111ddd;backdrop-filter:blur(8px)}
     .stat span{display:block;color:#a9b7c8;font:500 .58rem "DM Mono",monospace;text-transform:uppercase;letter-spacing:.08em}
     .stat strong{display:block;margin-top:2px;font-size:.96rem}
+    .stat small{display:block;margin-top:2px;color:#a7f3d0;font:500 .56rem "DM Mono",monospace}
     .meter{width:94px;height:5px;margin-top:5px;overflow:hidden;border-radius:9px;background:#ffffff20}
     .meter i{display:block;width:100%;height:100%;border-radius:inherit;background:var(--mint);transition:width .1s}
     .hud .spacer{flex:1}
@@ -75,6 +76,7 @@
       .stat{min-width:0;padding:6px 8px;border-radius:9px}
       .stat span{font-size:.49rem}
       .stat strong{font-size:.79rem}
+      .stat small{font-size:.48rem}
       .meter{width:62px}
       .hud .tool{padding:7px 9px;font-size:.75rem}
       .minimap{right:7px;bottom:7px;width:112px;padding:5px;border-radius:9px}
@@ -147,7 +149,7 @@
       <div class="stat"><span>Mice</span><strong id="mice-count">0 / 10</strong></div>
       <div class="stat"><span>Dogs</span><strong id="dog-count">5</strong></div>
       <div class="stat"><span>Time</span><strong id="clock">0:00</strong></div>
-      <div class="stat"><span id="state-label">Cat</span><strong id="cat-state">Ready</strong></div>
+      <div class="stat"><span id="state-label">Cat</span><strong id="cat-state">Ready</strong><small id="pounce-count">2 / 2</small></div>
       <div class="stat"><span>Sprint</span><div class="meter"><i id="stamina"></i></div></div>
       <span class="spacer"></span><button id="pause-button" class="tool" type="button">Pause</button>
     </div>
@@ -198,10 +200,10 @@
     catRadius: 12, mouseSpeed: 94, dogSpeed: 82, alertSpeedMultiplier: 1.5, alertSpeedDuration: 1, jumpTime: .58, pounceDistance: 150, mouseJumpTime: .85,
     mouseVision: 245, dogVision: 410, mouseMemory: 1.7, dogMemory: 1.5, fenceBreak: 1.2, mouseFov: Math.PI * .72,
     dogFov: Math.PI * .82, catSprint: 2, catRecovery: 1,
-    catchRadius: 20, dogCatch: 20
+    catchRadius: 20, dogCatch: 20, pounceCharges: 2, pounceCooldown: 3
   };
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
-  const ui = Object.fromEntries(["mice-count","dog-count","clock","cat-state","state-label","stamina","pause-button","start-screen","pause-screen","end-screen","start-button","resume-button","again-button","end-title","end-tag","end-copy","minimap-level"].map(id => [id,document.getElementById(id)]));
+  const ui = Object.fromEntries(["mice-count","dog-count","clock","cat-state","state-label","pounce-count","stamina","pause-button","start-screen","pause-screen","end-screen","start-button","resume-button","again-button","end-title","end-tag","end-copy","minimap-level"].map(id => [id,document.getElementById(id)]));
   const keys = new Set(), touch = new Set();
   const world = {w:C.cols*C.tile,h:C.rows*C.tile};
   const minimap=document.querySelector("#minimap"),mapCtx=minimap.getContext("2d");
@@ -260,7 +262,7 @@
       if(!placements.includes(p))placements.push(p);
     }
     const points=[center(2,2),...placements.map(p=>center(p.c,p.r))];
-    cat={...points[0],r:C.catRadius,dir:{x:1,y:0},jump:0,pounceRemaining:0,sprint:0,recovery:0,hidden:false,anim:0};
+    cat={...points[0],r:C.catRadius,dir:{x:1,y:0},jump:0,pounceRemaining:0,pounceCharges:C.pounceCharges,pounceCooldowns:[],sprint:0,recovery:0,hidden:false,anim:0};
     mice=points.slice(1,1+levelMice).map(p=>({ ...p,r:9,dir:angleDir(rand(0,Math.PI*2)),speed:rand(C.mouseSpeed-6,C.mouseSpeed+8),state:"wander",timer:rand(.2,1.8),sprint:0,sprintCd:rand(0,1),alertBoost:0,alertReady:true,jump:0,anim:rand(0,7)}));
     dogs=points.slice(1+levelMice,1+levelMice+levelDogs).map(p=>({ ...p,r:14,dir:angleDir(rand(0,Math.PI*2)),speed:rand(75,89),state:"patrol",timer:rand(.3,1.6),route:[],target:null,path:[],pathTimer:0,lostSight:0,alertBoost:0,anim:rand(0,7)}));
     grass=Array.from({length:520},()=>({x:rand(0,world.w),y:rand(0,world.h),l:rand(3,10),a:rand(.035,.13),angle:rand(-1,1)}));
@@ -385,12 +387,17 @@
     return len?{x:x/len,y:y/len}:null;
   }
   function startPounce(){
-    if(mode!=="play"||cat.jump>0)return;
+    if(mode!=="play"||cat.pounceCharges<=0)return;
     const direction=inputDirection();
     if(direction)cat.dir=direction;
+    cat.pounceCharges--;cat.pounceCooldowns.push(C.pounceCooldown);
     cat.jump=C.jumpTime;cat.pounceRemaining=C.pounceDistance;
   }
   function updateCat(dt){
+    for(let i=cat.pounceCooldowns.length-1;i>=0;i--){
+      cat.pounceCooldowns[i]=Math.max(0,cat.pounceCooldowns[i]-dt);
+      if(cat.pounceCooldowns[i]===0){cat.pounceCooldowns.splice(i,1);cat.pounceCharges=Math.min(C.pounceCharges,cat.pounceCharges+1);}
+    }
     const direction=inputDirection();
     const sprintHeld=keys.has(" ")||touch.has("sprint");
     if(sprintHeld&&cat.sprint<=0&&cat.recovery<=0)cat.sprint=C.catSprint;
@@ -468,6 +475,8 @@
     ui.clock.textContent=`${Math.floor(elapsed/60)}:${String(Math.floor(elapsed%60)).padStart(2,"0")}`;
     ui["cat-state"].textContent=cat?.hidden?"Hidden":dogs.some(d=>d.state==="chase")?"Chased":mode==="play"?"Exposed":"Ready";
     ui["state-label"].textContent=cat?.hidden?"In bush":"Cat";
+    const nextPounceCooldown=cat?.pounceCooldowns.length?Math.min(...cat.pounceCooldowns):0;
+    ui["pounce-count"].textContent=`${cat?.pounceCharges??C.pounceCharges} / ${C.pounceCharges}${nextPounceCooldown>0?` · ${nextPounceCooldown.toFixed(1)}s`:""}`;
     const pct=cat?.sprint>0?cat.sprint/C.catSprint*100:cat?.recovery>0?100-cat.recovery/C.catRecovery*100:100;
     ui.stamina.style.width=`${pct}%`;ui.stamina.style.background=cat?.recovery>0?"#fbbf24":"#6ee7b7";
   }
